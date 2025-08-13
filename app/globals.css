@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sb-bg: 255 255 255;
+  --sb-fg: 17 24 39;
+}
+
+html, body, #__next {
+  height: 100%;
+}
+
+/* Fondo y color de texto base */
+body {
+  background: rgb(var(--sb-bg));
+  color: rgb(var(--sb-fg));
+}
+
+/* Contenedor centralizado */
+.container {
+  @apply mx-auto max-w-7xl px-4;
+}
+
+/* Scroll suave para los anchors (#productos, etc.) */
+html {
+  scroll-behavior: smooth;
+}
