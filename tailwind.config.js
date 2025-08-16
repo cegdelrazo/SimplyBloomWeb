@@ -4,7 +4,7 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          pink: "#f2133c"
+          pink: "#b9141a"
         }
       },
       keyframes: {

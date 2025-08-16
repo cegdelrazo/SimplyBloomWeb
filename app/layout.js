@@ -7,8 +7,8 @@ export const metadata = {
     description: "Not your ordinary flower bouquet.",
     icons: [{ rel: "icon", url: "/logo.svg" }],
     themeColor: [
-        { media: "(prefers-color-scheme: light)", color: "#f2133c" },
-        { media: "(prefers-color-scheme: dark)",  color: "#f2133c" },
+        { media: "(prefers-color-scheme: light)", color: "#b9141a" },
+        { media: "(prefers-color-scheme: dark)",  color: "#b9141a" },
     ],
 };
 
@@ -17,8 +17,8 @@ export default function RootLayout({ children }) {
         <html lang="es">
         <head>
             {/* Opcional: redundante pero válido si quieres forzar */}
-            <meta name="theme-color" content="#f2133c" />
-            <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#f2133c" />
+            <meta name="theme-color" content="#b9141a" />
+            <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#b9141a" />
         </head>
         <body className="bg-white text-gray-900">
         <Navbar />
