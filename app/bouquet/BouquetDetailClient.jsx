@@ -5,8 +5,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 
 const RAMOS = [
-    { key: "rose", name: "RAMO ROSE", price: 800, img: "/media/bouquets/rose.webp" },
-    { key: "lino", name: "RAMO LINO", price: 900, img: "/media/bouquets/lino.webp" },
+    { key: "rose", name: "RAMO ROSE", price: 800, img: "/media/bouquets/lino.webp" },
+    { key: "lino", name: "RAMO LINO", price: 900, img: "/media/bouquets/rose.webp" },
 ];
 
 export default function BouquetDetailClient({ product }) {

@@ -6,7 +6,6 @@ import Link from "next/link";
 
 // IMPORTA los componentes auxiliares que ya creamos
 import Hero from "@/components/bouquet/Hero";
-import ProductGalleryStripMobile from "@/components/bouquet/ProductGalleryStripMobile";
 import ThumbsWithLightbox from "@/components/bouquet/ThumbsWithLightbox";
 
 // Opciones de ramo (temporal/estático)
