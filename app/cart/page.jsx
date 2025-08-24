@@ -13,6 +13,8 @@ export default function CartPage() {
         dispatch,
     } = useGlobalContext();
 
+    console.log(cart);
+
     const handleSaveAddress = (id, address) => {
         dispatch({ type: "SET_ITEM_ADDRESS", payload: { id, address } });
         const cp = address?.postalCode;
