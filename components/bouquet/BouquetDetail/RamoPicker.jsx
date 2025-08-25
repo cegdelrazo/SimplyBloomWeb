@@ -34,7 +34,6 @@ export default function RamoPicker({ ramos, choice, onChange }) {
                                     fetchPriority="low"
                                 />
                             </div>
-                            <div className="h-[2px] bg-brand-pink" />
                             <div className="p-3 flex items-baseline justify-between">
                                 <div className="font-serif text-lg">{r.name}</div>
                                 <div className="text-lg font-semibold">

@@ -51,6 +51,7 @@ export default function BouquetDetailClient({ product }) {
                         selected={selected}
                         onAdded={showToast}
                         onSubmitReady={(submitForm) => (submitRef.current = submitForm)}
+                        product={product}
                     />
                 </aside>
             </section>

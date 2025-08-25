@@ -9,13 +9,14 @@ import LateWarningModal from "./LateWarningModal";
 import LateConsentAlert from "./LateConsentAlert";
 
 export default function OrderForm({
-                                      disabled,
-                                      helper,
-                                      total,
-                                      selected,
-                                      onAdded,
-                                      onSubmitReady,
-                                  }) {
+      disabled,
+      helper,
+      total,
+      selected,
+      onAdded,
+      onSubmitReady,
+      product
+  }) {
     const { dispatch } = useGlobalContext();
 
     // Solo a partir de mañana
@@ -32,7 +33,7 @@ export default function OrderForm({
         title: "",
         message: "",
         images: [],
-        lateConsent: false, // lo establecemos desde el modal o desde el alert
+        lateConsent: false,
     };
 
     // Validación extra
@@ -67,6 +68,7 @@ export default function OrderForm({
             },
             image: selected.img,
             productSlug: selected.key,
+            product,
         };
 
         dispatch({ type: "ADD_ITEM_CART", payload: item });
