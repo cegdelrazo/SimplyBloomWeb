@@ -6,7 +6,11 @@ import { useGlobalContext } from "@/app/context/globalContext";
 const TAX_RATE = 0.16; // IVA 16% MX
 
 function money(n = 0) {
-    return n.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
+    return n.toLocaleString("es-MX", {
+        style: "currency",
+        currency: "MXN",
+        maximumFractionDigits: 0,
+    });
 }
 
 export default function CostSummary() {
@@ -20,33 +24,36 @@ export default function CostSummary() {
         subtotal,
         iva,
         total,
-        pendingShippingIds,
+        pendingShippingLineIds,
         lines,
     } = useMemo(() => {
         const lines = [];
         let productSubtotal = 0;
         let shippingTotal = 0;
-        const pendingShippingIds = [];
+        const pendingShippingLineIds = [];
 
         for (const it of cart.cartItems) {
             const qty = Number(it.quantity || 1);
+
+            // productos
             const lineProducts = (it.price || 0) * qty;
             productSubtotal += lineProducts;
 
-            // Envío por ítem: solo si es delivery y hay shipping válido
+            // envío por ÍTEM (por ramo). Si qty>1, multiplica.
             let lineShipping = 0;
             const isDelivery = it?.deliveryAddress?.mode === "delivery";
             if (isDelivery) {
                 if (it?.shipping?.valid) {
-                    lineShipping = Number(it.shipping.cost || 0);
+                    const unitShipping = Number(it.shipping.cost || 0);
+                    lineShipping = unitShipping * qty; // ⬅️ por ramo
                     shippingTotal += lineShipping;
                 } else {
-                    pendingShippingIds.push(it.id);
+                    pendingShippingLineIds.push(it.lineId);
                 }
             }
 
             lines.push({
-                id: it.id,
+                lineId: it.lineId,
                 name: it?.product?.name || it?.name || "Producto",
                 qty,
                 lineProducts,
@@ -66,7 +73,7 @@ export default function CostSummary() {
             subtotal,
             iva,
             total,
-            pendingShippingIds,
+            pendingShippingLineIds,
             lines,
         };
     }, [cart.cartItems]);
@@ -76,16 +83,20 @@ export default function CostSummary() {
             {/* Desglose por ítem */}
             <ul className="divide-y divide-gray-100">
                 {lines.map((ln) => (
-                    <li key={ln.id} className="py-3">
+                    <li key={ln.lineId} className="py-3">
                         <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0">
                                 <p className="text-sm font-medium text-gray-900 truncate">
                                     {ln.name}
-                                    {ln.qty > 1 && <span className="ml-1 text-gray-500 font-normal">× {ln.qty}</span>}
+                                    {ln.qty > 1 && (
+                                        <span className="ml-1 text-gray-500 font-normal">× {ln.qty}</span>
+                                    )}
                                 </p>
+
                                 <p className="text-xs text-gray-500">
                                     Productos: {money(ln.lineProducts)}
                                 </p>
+
                                 {ln.isDelivery ? (
                                     ln.shipping?.valid ? (
                                         <p className="text-xs text-emerald-700">
@@ -139,7 +150,7 @@ export default function CostSummary() {
             </div>
 
             {/* Aviso si falta envío en algún ítem */}
-            {pendingShippingIds.length > 0 && (
+            {pendingShippingLineIds.length > 0 && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                     Tienes artículos con envío pendiente por C.P. — el total podría cambiar.
                 </div>

@@ -5,6 +5,7 @@ import EmptyCart from "@/app/cart/components/EmptyCart";
 import CartItem from "@/app/cart/components/cartItem/CartItem";
 import BuyerCard from "@/app/cart/components/buyer";
 import CostSummary from "@/app/cart/components/summary";
+import PayButton from "@/app/cart/components/summary/PayButton";
 
 export default function CartPage() {
     const {
@@ -23,8 +24,8 @@ export default function CartPage() {
                             Productos en el carrito
                         </h2>
                         <div className="mt-4 divide-y divide-gray-100">
-                            {cart.cartItems.map((it, i) => (
-                                <CartItem key={`${it.id}-${it.productSlug ?? "no-slug"}-${i}`} item={it} />
+                            {cart.cartItems.map((it) => (
+                                <CartItem key={it.lineId} item={it} />
                             ))}
                         </div>
                     </div>

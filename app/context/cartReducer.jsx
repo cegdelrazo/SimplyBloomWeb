@@ -14,17 +14,24 @@ export const cartInitialState = {
 export const cartReducer = (state, action) => {
     switch (action.type) {
         case "ADD_ITEM_CART":
-            return { ...state, cartItems: [...state.cartItems, action.payload] };
+            const newItem = {
+                ...action.payload,
+                lineId: crypto.randomUUID(),
+            };
+            return { ...state, cartItems: [...state.cartItems, newItem] };
 
         case "REMOVE_ITEM_CART":
-            return { ...state, cartItems: state.cartItems.filter((it) => it.id !== action.payload) };
+            return {
+                ...state,
+                cartItems: state.cartItems.filter((it) => it.lineId !== action.payload),
+            };
 
         case "SET_ITEM_ADDRESS": {
-            const { id, address } = action.payload; // address: {fullName, street, ...}
+            const { lineId, address } = action.payload;
             return {
                 ...state,
                 cartItems: state.cartItems.map((it) =>
-                    it.id === id ? { ...it, deliveryAddress: address } : it
+                    it.lineId === lineId ? { ...it, deliveryAddress: address } : it
                 ),
             };
         }
@@ -37,11 +44,11 @@ export const cartReducer = (state, action) => {
         }
 
         case "SET_ITEM_SHIPPING": {
-            const { id, shipping } = action.payload; // shipping: {cp, zone, cost, etaDays, note}
+            const { lineId, shipping } = action.payload;
             return {
                 ...state,
                 cartItems: state.cartItems.map((it) =>
-                    it.id === id ? { ...it, shipping } : it
+                    it.lineId === lineId ? { ...it, shipping } : it
                 ),
             };
         }

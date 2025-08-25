@@ -22,7 +22,10 @@ export default function CartItem({ item }) {
 
     const syncAddress = (patch) => {
         const next = { ...(item.deliveryAddress || { mode: deliveryMode }), ...patch };
-        dispatch({ type: "SET_ITEM_ADDRESS", payload: { id: item.id, address: next } });
+        dispatch({
+            type: "SET_ITEM_ADDRESS",
+            payload: { lineId: item.lineId, address: next },
+        });
     };
 
     const handleModeChange = (mode) => {
@@ -36,7 +39,7 @@ export default function CartItem({ item }) {
         dispatch({
             type: "SET_ITEM_SHIPPING",
             payload: {
-                id: item.id,
+                lineId: item.lineId,
                 shipping: {
                     cp,
                     valid: !!sim.valid,
