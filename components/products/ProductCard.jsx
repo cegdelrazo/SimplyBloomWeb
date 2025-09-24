@@ -25,7 +25,6 @@ export default function ProductCard({ id, img, name, subtitle, price }) {
                 <div>
                     <div className="flex items-baseline justify-between">
                         <h3 className="font-serif italic text-[15px] leading-none">{name}</h3>
-                        <div className="text-[14px] font-semibold">{`$${price} MXN`}</div>
                     </div>
                     <p className="mt-1 text-[14px] leading-snug text-gray-800">{subtitle}</p>
                 </div>

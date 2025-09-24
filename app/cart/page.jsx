@@ -5,7 +5,6 @@ import EmptyCart from "@/app/cart/components/EmptyCart";
 import CartItem from "@/app/cart/components/cartItem/CartItem";
 import BuyerCard from "@/app/cart/components/buyer";
 import CostSummary from "@/app/cart/components/summary";
-import PayButton from "@/app/cart/components/summary/PayButton";
 
 export default function CartPage() {
     const {

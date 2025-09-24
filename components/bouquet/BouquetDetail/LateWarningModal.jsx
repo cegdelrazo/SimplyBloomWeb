@@ -71,7 +71,7 @@ export default function LateWarningModal({
                             </button>
 
                             <a
-                                href="https://wa.me/5215555555555"
+                                href="https://wa.me/523322029594"
                                 target="_blank"
                                 rel="noreferrer"
                                 className="inline-flex justify-center items-center rounded-full border px-4 py-2 text-sm font-medium hover:bg-gray-50"
@@ -79,14 +79,6 @@ export default function LateWarningModal({
                                 Contactarnos
                             </a>
 
-                            {onAccept && (
-                                <button
-                                    onClick={onAccept}
-                                    className="inline-flex justify-center items-center rounded-full bg-black text-white px-4 py-2 text-sm font-semibold hover:brightness-110"
-                                >
-                                    Continuar igualmente
-                                </button>
-                            )}
                         </div>
                     </div>
                 </div>

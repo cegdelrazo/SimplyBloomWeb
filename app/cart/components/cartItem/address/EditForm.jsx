@@ -121,15 +121,8 @@ export default function EditForm({
                                     shipping?.valid ? (
                                         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800">
                                             <div className="font-medium">
-                                                Envío: ${shipping.cost}{shipping.zone ? ` · ${shipping.zone}` : ""}
+                                                Envío: ${shipping.cost}
                                             </div>
-                                            {(shipping.etaDays || shipping.note) && (
-                                                <div className="text-emerald-700">
-                                                    {shipping.etaDays ? `ETA: ${shipping.etaDays}` : ""}
-                                                    {shipping.etaDays && shipping.note ? " · " : ""}
-                                                    {shipping.note}
-                                                </div>
-                                            )}
                                         </div>
                                     ) : (
                                         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">

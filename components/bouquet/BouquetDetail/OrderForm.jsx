@@ -5,8 +5,41 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import { useGlobalContext } from "@/app/context/globalContext";
 import { buildOrderSchema, cities } from "./constants";
 import { tomorrowStrLocal, shouldWarnLateForTomorrow } from "@/utils/dates";
+import { safeUUID } from 'utils/ids';
 import LateWarningModal from "./LateWarningModal";
 import LateConsentAlert from "./LateConsentAlert";
+import { useRouter } from "next/navigation";
+
+/* =========================
+ *  Constantes & helpers
+ * ======================== */
+const MAX_IMAGES = 4;
+const MAX_SIZE_MB = 3;
+const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
+function formatMB(bytes = 0) {
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function buildImageModels(files) {
+    return files.map((f) => ({
+        id: safeUUID(),
+        name: f.name,
+        size: f.size,
+        type: f.type || "application/octet-stream",
+        previewUrl: URL.createObjectURL(f),
+        file: f,
+    }));
+}
+
+// Extrae ciudades reales desde cartItems[*].options.city.city
+function getCartCities(cart) {
+    const list = (cart?.cartItems || [])
+        .map((it) => it?.options?.city?.city)
+        .filter((v) => typeof v === "string" && v.trim().length > 0);
+    const unique = Array.from(new Set(list));
+    return { list, unique };
+}
 
 export default function OrderForm({
       disabled,
@@ -15,9 +48,21 @@ export default function OrderForm({
       selected,
       onAdded,
       onSubmitReady,
-      product
+      product,
   }) {
-    const { dispatch } = useGlobalContext();
+    const { state, dispatch } = useGlobalContext();
+    const router = useRouter();
+    const cart = state?.cart;
+
+    // Ciudades actuales del carrito
+    const { cartCities, lockedCity, isMultiCity } = useMemo(() => {
+        const { unique } = getCartCities(cart);
+        return {
+            cartCities: unique,
+            lockedCity: unique[0] || null,
+            isMultiCity: unique.length > 1,
+        };
+    }, [cart]);
 
     // Solo a partir de mañana
     const tomorrow = useMemo(() => tomorrowStrLocal(), []);
@@ -28,30 +73,60 @@ export default function OrderForm({
     const [warnAcknowledged, setWarnAcknowledged] = useState(false); // evita que reaparezca en el mismo flujo
 
     const initialValues = {
-        city: null,   // { city, pickup }
+        city: null,
         date: "",
         title: "",
         message: "",
-        images: [],
+        images: [], // [{id, name, size, type, previewUrl, file}]
         lateConsent: false,
     };
 
-    // Validación extra
+    // Validación extra (imágenes y consentimiento)
     const validate = (values) => {
         const errors = {};
-        if (values.images && values.images.length > 4) {
-            errors.images = "Máximo 4 imágenes";
+        const imgs = values.images || [];
+
+        if (imgs.length > MAX_IMAGES) {
+            errors.images = `Máximo ${MAX_IMAGES} imágenes.`;
         }
-        // Si aplica advertencia y no hay consentimiento, el botón submit queda deshabilitado;
-        // puedes también forzar mensaje en errors.lateConsent si quieres:
+
+        const tooBig = imgs.find((m) => (m?.size ?? 0) > MAX_SIZE_BYTES);
+        if (tooBig) {
+            errors.images = `${tooBig.name} supera ${MAX_SIZE_MB} MB (${formatMB(tooBig.size)}).`;
+        }
+
         if (shouldWarnLateForTomorrow(values.city, values.date, tomorrow) && !values.lateConsent) {
+            // opcional:
             // errors.lateConsent = "Marca esta casilla para continuar.";
         }
         return errors;
     };
 
-    const handleSubmit = (values, { resetForm, setSubmitting }) => {
+    const handleSubmit = (values, { resetForm, setSubmitting, setFieldError }) => {
         if (!selected) return;
+
+        // ====== VALIDACIÓN DE CIUDAD CONTRA CARRITO (en el submit) ======
+        // 1) si carrito tiene múltiples ciudades -> bloquear
+        // 2) si carrito tiene 1 ciudad -> selected.city.city debe coincidir
+        const selectedCityName = values?.city?.city || "";
+        if (isMultiCity) {
+            setSubmitting(false);
+            setFieldError(
+                "city",
+                `Tu carrito ya contiene artículos de múltiples ciudades: ${cartCities.join(
+                    ", "
+                )}. Elimina los que no correspondan o vacía el carrito.`
+            );
+            return;
+        }
+        if (lockedCity && selectedCityName && selectedCityName !== lockedCity) {
+            setSubmitting(false);
+            setFieldError(
+                "city",
+                `Tu carrito es de ${lockedCity}. Crea órdenes separadas por ciudad.`
+            );
+            return;
+        }
 
         const item = {
             id: selected.key,
@@ -66,6 +141,7 @@ export default function OrderForm({
                 imagesCount: values.images?.length || 0,
                 lateConsent: values.lateConsent,
             },
+            images: values.images, // [{id, name, size, type, previewUrl, file}]
             image: selected.img,
             productSlug: selected.key,
             product,
@@ -77,6 +153,7 @@ export default function OrderForm({
         resetForm();
         setWarnAcknowledged(false);
         setWarnOpen(false);
+        setTimeout(() => router.push("/cart"), 250);
     };
 
     return (
@@ -86,22 +163,38 @@ export default function OrderForm({
             validate={validate}
             onSubmit={handleSubmit}
         >
-            {({ isSubmitting, setFieldValue, submitForm, values, errors, touched }) => {
+            {({
+                  isSubmitting,
+                  setFieldValue,
+                  setFieldError,
+                  submitForm,
+                  values,
+                  errors,
+                  touched,
+              }) => {
                 // Exponer submit al padre (para el botón móvil)
                 useEffect(() => {
                     onSubmitReady && onSubmitReady(submitForm);
                 }, [submitForm, onSubmitReady]);
 
-                // ¿Aplica advertencia?
-                const warnApplies = shouldWarnLateForTomorrow(values.city, values.date, tomorrow) && !warnAcknowledged;
+                // Autoseleccionar ciudad del carrito si existe y no hay selección aún
+                useEffect(() => {
+                    if (!values.city && lockedCity) {
+                        const found = cities.find((c) => c.city === lockedCity) || null;
+                        if (found) setFieldValue("city", found, false);
+                    }
+                    // eslint-disable-next-line react-hooks/exhaustive-deps
+                }, [lockedCity]);
+
+                // ¿Aplica advertencia de “tarde para mañana”?
+                const warnApplies =
+                    shouldWarnLateForTomorrow(values.city, values.date, tomorrow) &&
+                    !warnAcknowledged;
 
                 // Abrir/cerrar modal automáticamente según condiciones
                 useEffect(() => {
-                    if (warnApplies) {
-                        setWarnOpen(true);
-                    } else {
-                        setWarnOpen(false);
-                    }
+                    if (warnApplies) setWarnOpen(true);
+                    else setWarnOpen(false);
                 }, [warnApplies]);
 
                 const handleCityChange = (e) => {
@@ -120,15 +213,27 @@ export default function OrderForm({
                     setWarnAcknowledged(false);
                 };
 
-                // Mostrar el alert con checkbox si:
-                // - aplica la advertencia (aún no aceptada), o
-                // - ya aceptó en el modal (lateConsent === true) para que quede visible la explicación.
-                const showInlineAlert = shouldWarnLateForTomorrow(values.city, values.date, tomorrow) || values.lateConsent;
+                // ====== VALIDACIÓN DE CIUDAD CONTRA CARRITO (en UI, para deshabilitar botón) ======
+                const selectedCityName = values?.city?.city || "";
+                const mismatch =
+                    !!lockedCity && !!selectedCityName && selectedCityName !== lockedCity;
+
+                const cityBlockReason = isMultiCity
+                    ? `Tu carrito contiene artículos de múltiples ciudades (${cartCities.join(
+                        ", "
+                    )}).`
+                    : mismatch
+                        ? `Tu carrito es de ${lockedCity}. Crea órdenes separadas por ciudad.`
+                        : "";
+
+                const submitDisabledByCity = Boolean(isMultiCity || mismatch);
 
                 return (
                     <>
                         <Form
-                            className={`mt-3 space-y-4 ${disabled ? "opacity-60 pointer-events-none" : ""}`}
+                            className={`mt-3 space-y-4 ${
+                                disabled ? "opacity-60 pointer-events-none" : ""
+                            }`}
                         >
                             {helper && <div className="text-sm text-gray-600">{helper}</div>}
 
@@ -150,23 +255,35 @@ export default function OrderForm({
                                         </option>
                                     ))}
                                 </select>
+
+                                {/* Errores del schema / submit */}
                                 <ErrorMessage
                                     name="city"
                                     component="div"
                                     className="mt-1 text-xs text-red-600"
                                 />
 
+                                {/* Mensajes de validación de ciudad en tiempo real */}
+                                {cityBlockReason && (
+                                    <div className="mt-1 text-xs text-amber-700">
+                                        {cityBlockReason}
+                                    </div>
+                                )}
+
                                 {/* Hint pickup si hay ciudad */}
                                 {values.city?.pickup && (
                                     <p className="mt-1 text-xs text-gray-600">
-                                        Envío a domicilio o Pickup en: <strong>{values.city.pickup}</strong>
+                                        Envío a domicilio o Pickup en:{" "}
+                                        <strong>{values.city.pickup}</strong>
                                     </p>
                                 )}
                             </div>
 
                             {/* Fecha (mínimo mañana) */}
                             <div>
-                                <label className="block text-sm font-medium mb-1">Fecha de entrega</label>
+                                <label className="block text-sm font-medium mb-1">
+                                    Fecha de entrega
+                                </label>
                                 <Field
                                     type="date"
                                     name="date"
@@ -181,14 +298,13 @@ export default function OrderForm({
                                 />
                             </div>
 
-                            {/* ALERT + CHECKBOX (inline en el form) */}
-                            {showInlineAlert && (
-                                <LateConsentAlert city={values.city?.city} />
-                            )}
+
 
                             {/* Título */}
                             <div>
-                                <label className="block text-sm font-medium mb-1">Título / Subtítulo</label>
+                                <label className="block text-sm font-medium mb-1">
+                                    Título / Subtítulo
+                                </label>
                                 <Field
                                     type="text"
                                     name="title"
@@ -196,7 +312,11 @@ export default function OrderForm({
                                     className="w-full rounded-md border px-3 py-2"
                                 />
                                 <div className="mt-1 flex items-center justify-between">
-                                    <ErrorMessage name="title" component="div" className="text-xs text-red-600" />
+                                    <ErrorMessage
+                                        name="title"
+                                        component="div"
+                                        className="text-xs text-red-600"
+                                    />
                                     <span className="text-[11px] text-gray-500">
                     {values.title?.length || 0}/60
                   </span>
@@ -205,7 +325,9 @@ export default function OrderForm({
 
                             {/* Mensaje */}
                             <div>
-                                <label className="block text-sm font-medium mb-1">Firma / Mensaje</label>
+                                <label className="block text-sm font-medium mb-1">
+                                    Firma / Mensaje
+                                </label>
                                 <Field
                                     as="textarea"
                                     rows={3}
@@ -213,7 +335,11 @@ export default function OrderForm({
                                     className="w-full rounded-md border px-3 py-2"
                                 />
                                 <div className="mt-1 flex items-center justify-between">
-                                    <ErrorMessage name="message" component="div" className="text-xs text-red-600" />
+                                    <ErrorMessage
+                                        name="message"
+                                        component="div"
+                                        className="text-xs text-red-600"
+                                    />
                                     <span className="text-[11px] text-gray-500">
                     {values.message?.length || 0}/240
                   </span>
@@ -223,7 +349,7 @@ export default function OrderForm({
                             {/* Imágenes */}
                             <div>
                                 <label className="block text-sm text-gray-700 font-medium mb-1">
-                                    Sube tus imágenes (máx. 4)
+                                    Sube tus imágenes (máx. {MAX_IMAGES})
                                 </label>
                                 <input
                                     type="file"
@@ -231,18 +357,67 @@ export default function OrderForm({
                                     multiple
                                     className="block w-full text-sm"
                                     onChange={(e) => {
-                                        const files = Array.from(e.target.files || []);
-                                        setFieldValue("images", files.slice(0, 4));
+                                        const picked = Array.from(e.target.files || []);
+                                        const msgs = [];
+
+                                        if (picked.length > MAX_IMAGES) {
+                                            msgs.push(
+                                                `Máximo ${MAX_IMAGES} imágenes; se tomarán las primeras ${MAX_IMAGES}.`
+                                            );
+                                        }
+
+                                        const sliced = picked.slice(0, MAX_IMAGES);
+
+                                        // Validar tamaño y construir modelos
+                                        const validFiles = [];
+                                        for (const f of sliced) {
+                                            if (f.size > MAX_SIZE_BYTES) {
+                                                msgs.push(
+                                                    `${f.name} supera ${MAX_SIZE_MB} MB (${formatMB(f.size)}).`
+                                                );
+                                            } else {
+                                                validFiles.push(f);
+                                            }
+                                        }
+
+                                        const models = buildImageModels(validFiles);
+                                        setFieldValue("images", models);
+
+                                        if (msgs.length) {
+                                            setFieldError("images", msgs.join("\n"));
+                                        } else {
+                                            setFieldError("images", undefined);
+                                        }
                                     }}
                                 />
-                                {(errors.images || touched.images) && (
-                                    <div className="mt-1 text-xs text-red-600">
+
+                                {/* Errores (en bloque, multi-línea) */}
+                                {errors.images && (
+                                    <div className="mt-1 text-xs text-red-600 whitespace-pre-line">
                                         {errors.images}
                                     </div>
                                 )}
+
+                                {/* Previews */}
                                 {values.images?.length > 0 && (
-                                    <div className="mt-2 text-xs text-gray-600">
-                                        {values.images.length} archivo(s) seleccionado(s)
+                                    <div className="mt-2 space-y-2">
+                                        <div className="text-xs text-gray-600">
+                                            {values.images.length} archivo(s) aceptado(s)
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            {values.images.map((m) => (
+                                                <div key={m.id} className="border rounded p-1">
+                                                    <img
+                                                        src={m.previewUrl}
+                                                        alt={m.name}
+                                                        className="w-full h-24 object-cover rounded"
+                                                    />
+                                                    <div className="mt-1 text-[11px] text-gray-600 break-words">
+                                                        {m.name} — {formatMB(m.size)}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -261,9 +436,19 @@ export default function OrderForm({
                                 disabled={
                                     disabled ||
                                     isSubmitting ||
-                                    (shouldWarnLateForTomorrow(values.city, values.date, tomorrow) && !values.lateConsent)
+                                    submitDisabledByCity || // ⬅️ bloquea por ciudad
+                                    (shouldWarnLateForTomorrow(values.city, values.date, tomorrow) &&
+                                        !values.lateConsent) ||
+                                    !!errors.images
                                 }
                                 className="mt-2 hidden md:inline-flex items-center justify-center rounded-full border px-6 py-2 font-medium hover:bg-gray-50 disabled:opacity-60"
+                                title={
+                                    submitDisabledByCity
+                                        ? (isMultiCity
+                                            ? `Tu carrito contiene artículos de múltiples ciudades (${cartCities.join(", ")}).`
+                                            : `Tu carrito es de ${lockedCity}.`)
+                                        : (isSubmitting ? "Agregando..." : "Agregar al carrito")
+                                }
                             >
                                 {isSubmitting ? "Agregando..." : "Agregar al carrito"}
                             </button>
@@ -275,10 +460,8 @@ export default function OrderForm({
                             cityName={values.city?.city || ""}
                             onClose={() => {
                                 setWarnOpen(false);
-                                // No marcamos consentimiento; el botón submit seguirá deshabilitado
                             }}
                             onAccept={() => {
-                                // Marca consentimiento y recuerda que ya aceptó en este flujo
                                 setWarnAcknowledged(true);
                                 setWarnOpen(false);
                                 setFieldValue("lateConsent", true);

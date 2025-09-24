@@ -1,19 +1,64 @@
 // utils/shipping.js
+import zones from "@/app/data/shippingZones"; // <-- sin .json, importa el .js
+
+function cpToNumber(cp) { return Number(cp); }
+
+function findZoneByCp(cp) {
+    const n = cpToNumber(cp);
+    if (Number.isNaN(n)) return null;
+
+    for (const z of zones) {
+        if (Array.isArray(z.includes) && z.includes.includes(n)) return z;
+    }
+    for (const z of zones) {
+        if (typeof z.min === "number" && typeof z.max === "number") {
+            if (n >= z.min && n <= z.max) return z;
+        }
+    }
+    return null;
+}
+
+function etaForCity(city) {
+    switch (city) {
+        case "Monterrey":
+        case "San Pedro Garza García":
+            return "24–48h";
+        case "CDMX":
+            return "";
+        case "Guadalajara":
+        case "Zapopan":
+        case "Tlaquepaque":
+        case "Tonalá":
+        case "Tlajomulco de Zúñiga":
+            return "24–48h";
+        default:
+            return "";
+    }
+}
+
 export function simulateShippingByCP(cp) {
     if (!/^\d{5}$/.test(cp)) {
         return { valid: false, message: "Ingresa un CP válido de 5 dígitos." };
     }
-    const n = Number(cp);
-
-    // Simulados: ajusta a tus reglas reales cuando las tengas
-    if (n >= 1000 && n <= 16999) {
-        return { valid: true, zone: "CDMX", etaDays: "", cost: 89, note: "" };
+    const match = findZoneByCp(cp);
+    if (match) {
+        return {
+            valid: true,
+            id: match.id,
+            city: match.city,
+            zone: match.label,
+            cost: match.price,
+            etaDays: etaForCity(match.city),
+            note: "",
+        };
     }
-    if (n >= 44000 && n <= 44999) {
-        return { valid: true, zone: "Guadalajara", etaDays: "", cost: 129, note: "" };
-    }
-    if (n >= 64000 && n <= 67999) {
-        return { valid: true, zone: "Monterrey", etaDays: "24–48h", cost: 129, note: "Cobertura metropolitana." };
-    }
-    return { valid: true, zone: "Nacional", etaDays: "2–4 días", cost: 189, note: "Zonas extendidas pueden tardar más." };
+    return {
+        valid: true,
+        id: "nacional",
+        city: "Nacional",
+        zone: "Cobertura nacional",
+        cost: 189,
+        etaDays: "2–4 días",
+        note: "Zonas extendidas pueden tardar más.",
+    };
 }

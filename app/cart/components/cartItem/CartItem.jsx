@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useGlobalContext } from "@/app/context/globalContext";
 import ItemHeaderRow from "./ItemHeaderRow";
 import MessageNote from "./MessageNote";
 import DeliveryModeSelector from "./DeliveryModeSelector";
 import AddressForm from "@/app/cart/components/cartItem/address";
 import { simulateShippingByCP } from "@/utils/shipping";
+import ImagesStrip from "@/app/cart/components/cartItem/ImagesStrip";
 
 export default function CartItem({ item }) {
     const { dispatch } = useGlobalContext();
     const { product, price, options } = item || {};
 
-    const initialMode = item?.deliveryAddress?.mode === "delivery" ? "delivery" : "pickup";
+    const initialMode =
+        item?.deliveryAddress?.mode === "delivery" ? "delivery" : "pickup";
     const [deliveryMode, setDeliveryMode] = useState(initialMode);
 
     const pickupAddress = useMemo(
@@ -33,7 +35,7 @@ export default function CartItem({ item }) {
         syncAddress({ mode });
     };
 
-    // ⬇️ ahora simula y guarda envío cuando cambia C.P.
+    // Simula y guarda envío cuando cambia C.P.
     const handleCpChange = (cp) => {
         const sim = simulateShippingByCP(cp);
         dispatch({
@@ -52,18 +54,50 @@ export default function CartItem({ item }) {
         });
     };
 
+    // ⬇️ Eliminar ítem
+    const removeItem = useCallback(() => {
+        dispatch({ type: "REMOVE_ITEM_CART", payload: item.lineId });
+    }, [dispatch, item.lineId]);
+
+    const confirmAndRemove = useCallback(() => {
+        // Si no quieres confirmación, llama directamente removeItem()
+        if (window.confirm("¿Eliminar este artículo del carrito?")) {
+            removeItem();
+        }
+    }, [removeItem]);
+
     return (
         <article className="border-b border-gray-100 py-6 space-y-4">
-            <ItemHeaderRow
-                image={item?.image}
-                productName={product?.name}
-                productSubtitle={product?.subtitle}
-                city={options?.city?.city}
-                date={options?.date}
-                price={price}
-            />
+            {/* Encabezado + botón eliminar */}
+            <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                    <ItemHeaderRow
+                        image={item?.image}
+                        productName={product?.name}
+                        productSubtitle={product?.subtitle}
+                        city={options?.city?.city}
+                        date={options?.date}
+                        price={price}
+                    />
+                </div>
+
+                <div className="shrink-0">
+                    <button
+                        type="button"
+                        onClick={confirmAndRemove}
+                        data-testid="remove-cart-item"
+                        className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        aria-label={`Eliminar ${product?.name || item?.name || "artículo"}`}
+                        title="Eliminar"
+                    >
+                        ✕ Eliminar
+                    </button>
+                </div>
+            </div>
 
             <MessageNote title={options?.title} message={options?.message} />
+
+            <ImagesStrip lineId={item.lineId} images={item.images} />
 
             <div className="space-y-3">
                 <DeliveryModeSelector

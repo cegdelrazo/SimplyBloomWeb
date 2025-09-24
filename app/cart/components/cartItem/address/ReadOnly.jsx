@@ -9,7 +9,7 @@ function Info({ label, value }) {
     );
 }
 
-export default function ReadOnly({ values, onEdit, shipping }) { // ⬅️ NEW prop
+export default function ReadOnly({ values, onEdit, shipping }) {
     const { cp, street, extNumber, neighborhood, fullName, phone } = values || {};
 
     return (
@@ -31,8 +31,6 @@ export default function ReadOnly({ values, onEdit, shipping }) { // ⬅️ NEW p
                     {shipping?.valid && (
                         <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] text-emerald-800 border border-emerald-200">
               Envío ${shipping.cost}
-                            {shipping.zone ? ` · ${shipping.zone}` : ""}
-                            {shipping.etaDays ? ` · ${shipping.etaDays}` : ""}
             </span>
                     )}
                 </div>
