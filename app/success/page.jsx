@@ -1,6 +1,7 @@
+// app/success/page.js
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 /* ==================== Utils ==================== */
@@ -156,9 +157,13 @@ function ItemCard({ it }) {
                         </h3>
                         {productName && (
                             <div className="mt-0.5">
-                                <div className="text-sm text-gray-800">Plantilla ({productName})</div>
+                                <div className="text-sm text-gray-800">
+                                    Plantilla ({productName})
+                                </div>
                                 {productSubtitle && (
-                                    <div className="text-xs text-gray-500">Plantilla ({productSubtitle})</div>
+                                    <div className="text-xs text-gray-500">
+                                        Plantilla ({productSubtitle})
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -223,8 +228,8 @@ function ItemCard({ it }) {
     );
 }
 
-/* ==================== Page ==================== */
-export default function SuccessPage() {
+/* ==================== Client Component ==================== */
+function SuccessClient() {
     const search = useSearchParams();
     const orderId = search.get("orderId");
     const sessionId = search.get("session_id") || search.get("sessionId");
@@ -260,10 +265,7 @@ export default function SuccessPage() {
                 }
                 const data = await res.json();
 
-                // 🔧 Normalización:
-                // - Si vino orderId: ya es un objeto de orden (tal como antes).
-                // - Si vino session_id: el backend regresa { items: [...] } → elegimos la
-                //   orden cuyo payment.sessionId === sessionId; si no está, tomamos la primera.
+                // Normalización
                 let orderObj;
                 if (orderId) {
                     orderObj = data;
@@ -302,7 +304,8 @@ export default function SuccessPage() {
         );
     }
 
-    if (err) return <div className="max-w-4xl mx-auto p-8 text-brand-pink">{err}</div>;
+    if (err)
+        return <div className="max-w-4xl mx-auto p-8 text-brand-pink">{err}</div>;
     if (!order) return <div className="max-w-4xl mx-auto p-8">Sin datos de orden.</div>;
 
     const statusKey = (order?.status || "").toUpperCase();
@@ -323,7 +326,6 @@ export default function SuccessPage() {
                         <p className="text-sm text-gray-600">
                             Número de orden: <b>{order.orderId}</b>
                         </p>
-                        {/* Si el backend devuelve _resolvedBy, mostramos pista de cómo se resolvió */}
                         {order._resolvedBy && (
                             <p className="text-xs text-gray-400">
                                 fuente: {order._resolvedBy === "orderId" ? "orderId" : "session_id"}
@@ -444,5 +446,18 @@ export default function SuccessPage() {
                 </aside>
             </div>
         </div>
+    );
+}
+
+/* ==================== Page Wrapper ==================== */
+// Evita prerender estático y agrega Suspense alrededor del componente que usa useSearchParams
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Success" };
+
+export default function SuccessPage() {
+    return (
+        <Suspense fallback={<div className="max-w-4xl mx-auto p-8">Cargando…</div>}>
+            <SuccessClient />
+        </Suspense>
     );
 }
