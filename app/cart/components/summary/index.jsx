@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useGlobalContext } from "@/app/context/globalContext";
 
 /* ======================== Helpers ======================== */
-async function getPresignPut(key: string) {
-    const res = await fetch(process.env.NEXT_PUBLIC_PRESIGN_PUT_URL as string, {
+async function getPresignPut(key) {
+    const res = await fetch(process.env.NEXT_PUBLIC_PRESIGN_PUT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key }),
@@ -15,8 +15,8 @@ async function getPresignPut(key: string) {
     return res.json(); // { url }
 }
 
-async function uploadWithPresignedPut(url: string, file: File) {
-    // No headers: evita des-sincronizar la firma (Content-Type puede cambiar en el fetch)
+async function uploadWithPresignedPut(url, file) {
+    // No pongas headers aquí para no romper la firma
     const up = await fetch(url, { method: "PUT", body: file });
     if (!up.ok) throw new Error(`upload failed: ${up.status}`);
 }
@@ -31,13 +31,13 @@ function money(n = 0) {
     });
 }
 
-const hasAnyValue = (v: unknown) => {
+const hasAnyValue = (v) => {
     if (v === null || v === undefined) return false;
     const s = String(v).trim();
     return s.length > 0;
 };
 
-function checkAddressComplete(addrRaw: any) {
+function checkAddressComplete(addrRaw) {
     const addr = addrRaw?.address ? { ...addrRaw, ...addrRaw.address } : addrRaw || {};
     const street = addr.street ?? addr.calle ?? addr.line1 ?? addr.address1;
     const ext =
@@ -66,24 +66,24 @@ function uuid() {
 
 function getFileExtension(name = "") {
     const parts = String(name).split(".");
-    return parts.length > 1 ? parts.pop()!.toLowerCase() : "jpg";
+    return parts.length > 1 ? parts.pop().toLowerCase() : "jpg";
 }
-function s3KeyForImage(orderId: string, itemId: string, fileName: string) {
+function s3KeyForImage(orderId, itemId, fileName) {
     const ext = getFileExtension(fileName);
     const newFile = `${uuid()}.${ext}`;
     return `orders/${orderId}/${itemId}/${newFile}`;
 }
 
-function getRootCityLower(cartItems: any[]) {
+function getRootCityLower(cartItems) {
     const city = cartItems?.[0]?.options?.city?.city || "";
     return city.toLowerCase();
 }
-function getIdProduct(product: any) {
+function getIdProduct(product) {
     const raw = product?.id ?? "";
     const m = String(raw).match(/\d+/);
     return m ? Number(m[0]) : null;
 }
-function mapDelivery(it: any) {
+function mapDelivery(it) {
     const mode = it?.deliveryAddress?.mode === "delivery" ? "delivery" : "pickup";
     const date = it?.options?.date || "";
     if (mode === "pickup") return { deliveryMode: "pickup", date };
@@ -110,14 +110,14 @@ function mapDelivery(it: any) {
     };
 }
 
-/** Payload para crear orden (incluye itemId, s3Key por imagen y product minimal) */
-function buildOrderPayload(cart: any, orderId: string) {
+/** Construye payload final para crear orden (incluye itemId, s3Key por imagen y product minimal) */
+function buildOrderPayload(cart, orderId) {
     const items = cart?.cartItems || [];
 
-    const cartItems = items.map((it: any) => {
+    const cartItems = items.map((it) => {
         const itemId = uuid();
 
-        const images = (it.images || []).map((img: any) => ({
+        const images = (it.images || []).map((img) => ({
             id: img.id,
             originalName: img.name,
             size: img.size,
@@ -161,12 +161,7 @@ export default function CostSummary({
                                         submitLabel = "Crear orden",
                                         disabled = false,
                                         loading = false,
-                                    }: {
-    onSubmit?: (payload: any, meta: any) => void;
-    submitLabel?: string;
-    disabled?: boolean;
-    loading?: boolean;
-}) {
+                                    }) {
     const router = useRouter();
     const {
         state: { cart },
@@ -186,15 +181,16 @@ export default function CostSummary({
         lines,
         isCartEmpty,
     } = useMemo(() => {
-        const lines: any[] = [];
+        const lines = [];
         let productSubtotal = 0;
         let shippingTotal = 0;
-        const pendingShippingLineIds: string[] = [];
-        const missingAddressLineIds: string[] = [];
+        const pendingShippingLineIds = [];
+        const missingAddressLineIds = [];
         const items = cart.cartItems || [];
 
         for (const it of items) {
             const qty = Number(it.quantity || 1);
+
             const lineProducts = (it.price || 0) * qty;
             productSubtotal += lineProducts;
 
@@ -249,7 +245,7 @@ export default function CostSummary({
     const hasPendingShipping = pendingShippingLineIds.length > 0;
     const hasMissingAddress = missingAddressLineIds.length > 0;
 
-    const blockingIssues: string[] = [];
+    const blockingIssues = [];
     if (isCartEmpty) blockingIssues.push("Tu carrito está vacío.");
     if (!fullNameOk) blockingIssues.push("Falta el nombre del comprador.");
     if (!phoneOk) blockingIssues.push("El teléfono debe tener 10 dígitos (MX).");
@@ -269,10 +265,10 @@ export default function CostSummary({
             const localOrderId = uuid();
             const payload = buildOrderPayload(cart, localOrderId);
 
-            const filesToUpload: { key: string; file: File }[] = [];
-            (cart.cartItems || []).forEach((cartIt: any, i: number) => {
-                const pItem = (payload as any).cartItems[i];
-                (cartIt.images || []).forEach((img: any, j: number) => {
+            const filesToUpload = [];
+            (cart.cartItems || []).forEach((cartIt, i) => {
+                const pItem = payload.cartItems[i];
+                (cartIt.images || []).forEach((img, j) => {
                     const meta = pItem.images[j];
                     if (meta?.s3Key && img?.file) {
                         filesToUpload.push({ key: meta.s3Key, file: img.file });
@@ -288,7 +284,7 @@ export default function CostSummary({
             }
 
             setPhase("Creando orden…");
-            const res = await fetch(process.env.NEXT_PUBLIC_CREATE_ORDER_URL as string, {
+            const res = await fetch(process.env.NEXT_PUBLIC_CREATE_ORDER_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -325,7 +321,7 @@ export default function CostSummary({
 
             <div className="space-y-4">
                 <ul className="divide-y divide-gray-100">
-                    {lines.map((ln: any) => (
+                    {lines.map((ln) => (
                         <li key={ln.lineId} className="py-3">
                             <div className="flex items-start justify-between gap-4">
                                 <div className="min-w-0">
