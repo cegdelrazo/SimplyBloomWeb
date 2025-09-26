@@ -4,27 +4,24 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGlobalContext } from "@/app/context/globalContext";
 
-/* ======================== Helpers existentes ======================== */
-async function getPresignPut(key, contentType) {
-    const res = await fetch(process.env.NEXT_PUBLIC_PRESIGN_PUT_URL, {
+/* ======================== Helpers ======================== */
+async function getPresignPut(key: string) {
+    const res = await fetch(process.env.NEXT_PUBLIC_PRESIGN_PUT_URL as string, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, contentType }),
+        body: JSON.stringify({ key }),
     });
     if (!res.ok) throw new Error(`presign failed: ${res.status}`);
     return res.json(); // { url }
 }
 
-async function uploadWithPresignedPut(url, file, contentType) {
-    const up = await fetch(url, {
-        method: "PUT",
-        headers: { "Content-Type": contentType || "application/octet-stream" },
-        body: file,
-    });
+async function uploadWithPresignedPut(url: string, file: File) {
+    // No headers: evita des-sincronizar la firma (Content-Type puede cambiar en el fetch)
+    const up = await fetch(url, { method: "PUT", body: file });
     if (!up.ok) throw new Error(`upload failed: ${up.status}`);
 }
 
-const TAX_RATE = 0.16; // IVA 16% MX
+const TAX_RATE = 0.16;
 
 function money(n = 0) {
     return n.toLocaleString("es-MX", {
@@ -34,19 +31,23 @@ function money(n = 0) {
     });
 }
 
-const hasAnyValue = (v) => {
+const hasAnyValue = (v: unknown) => {
     if (v === null || v === undefined) return false;
     const s = String(v).trim();
     return s.length > 0;
 };
 
-function checkAddressComplete(addrRaw) {
+function checkAddressComplete(addrRaw: any) {
     const addr = addrRaw?.address ? { ...addrRaw, ...addrRaw.address } : addrRaw || {};
     const street = addr.street ?? addr.calle ?? addr.line1 ?? addr.address1;
     const ext =
-        addr.extNumber ?? addr.noExt ?? addr.numero ?? addr.exterior ?? addr.numExt ?? addr.outsideNumber;
-    const neigh =
-        addr.neighborhood ?? addr.colonia ?? addr.barrio ?? addr.col ?? addr.settlement;
+        addr.extNumber ??
+        addr.noExt ??
+        addr.numero ??
+        addr.exterior ??
+        addr.numExt ??
+        addr.outsideNumber;
+    const neigh = addr.neighborhood ?? addr.colonia ?? addr.barrio ?? addr.col ?? addr.settlement;
     const fields = { street, ext, neigh };
     const missing = Object.entries(fields)
         .filter(([, v]) => !hasAnyValue(v))
@@ -65,24 +66,24 @@ function uuid() {
 
 function getFileExtension(name = "") {
     const parts = String(name).split(".");
-    return parts.length > 1 ? parts.pop().toLowerCase() : "jpg";
+    return parts.length > 1 ? parts.pop()!.toLowerCase() : "jpg";
 }
-function s3KeyForImage(orderId, itemId, fileName) {
+function s3KeyForImage(orderId: string, itemId: string, fileName: string) {
     const ext = getFileExtension(fileName);
     const newFile = `${uuid()}.${ext}`;
     return `orders/${orderId}/${itemId}/${newFile}`;
 }
 
-function getRootCityLower(cartItems) {
+function getRootCityLower(cartItems: any[]) {
     const city = cartItems?.[0]?.options?.city?.city || "";
     return city.toLowerCase();
 }
-function getIdProduct(product) {
+function getIdProduct(product: any) {
     const raw = product?.id ?? "";
     const m = String(raw).match(/\d+/);
     return m ? Number(m[0]) : null;
 }
-function mapDelivery(it) {
+function mapDelivery(it: any) {
     const mode = it?.deliveryAddress?.mode === "delivery" ? "delivery" : "pickup";
     const date = it?.options?.date || "";
     if (mode === "pickup") return { deliveryMode: "pickup", date };
@@ -98,8 +99,7 @@ function mapDelivery(it) {
         addr.numExt ??
         addr.outsideNumber ??
         "";
-    const town =
-        addr.neighborhood ?? addr.colonia ?? addr.barrio ?? addr.col ?? addr.settlement ?? "";
+    const town = addr.neighborhood ?? addr.colonia ?? addr.barrio ?? addr.col ?? addr.settlement ?? "";
     const cp = it?.shipping?.cp || addr.cp || addr.postalCode || addr.zip || "";
     return {
         deliveryMode: "delivery",
@@ -110,14 +110,14 @@ function mapDelivery(it) {
     };
 }
 
-/** Construye payload final para crear orden (incluye itemId, s3Key por imagen y product minimal) */
-function buildOrderPayload(cart, orderId) {
+/** Payload para crear orden (incluye itemId, s3Key por imagen y product minimal) */
+function buildOrderPayload(cart: any, orderId: string) {
     const items = cart?.cartItems || [];
 
-    const cartItems = items.map((it) => {
+    const cartItems = items.map((it: any) => {
         const itemId = uuid();
 
-        const images = (it.images || []).map((img) => ({
+        const images = (it.images || []).map((img: any) => ({
             id: img.id,
             originalName: img.name,
             size: img.size,
@@ -125,7 +125,6 @@ function buildOrderPayload(cart, orderId) {
             s3Key: s3KeyForImage(orderId, itemId, img.name),
         }));
 
-        // Producto minimal desde el carrito
         const p = it?.product || {};
         const product = {
             id: p.id || null,
@@ -137,8 +136,8 @@ function buildOrderPayload(cart, orderId) {
             itemId,
             idBouquet: it?.productSlug || it?.id || "",
             message: { title: it?.options?.title || "", message: it?.options?.message || "" },
-            idProduct: getIdProduct(p), // numérico si lo necesitas en backend
-            product,                    // producto minimal
+            idProduct: getIdProduct(p),
+            product,
             delivery: mapDelivery(it),
             images,
         };
@@ -162,13 +161,17 @@ export default function CostSummary({
                                         submitLabel = "Crear orden",
                                         disabled = false,
                                         loading = false,
-                                    }) {
+                                    }: {
+    onSubmit?: (payload: any, meta: any) => void;
+    submitLabel?: string;
+    disabled?: boolean;
+    loading?: boolean;
+}) {
     const router = useRouter();
     const {
         state: { cart },
     } = useGlobalContext();
 
-    // Modal / submitting state
     const [submitting, setSubmitting] = useState(false);
     const [phase, setPhase] = useState("Preparando…");
 
@@ -183,21 +186,18 @@ export default function CostSummary({
         lines,
         isCartEmpty,
     } = useMemo(() => {
-        const lines = [];
+        const lines: any[] = [];
         let productSubtotal = 0;
         let shippingTotal = 0;
-        const pendingShippingLineIds = [];
-        const missingAddressLineIds = [];
+        const pendingShippingLineIds: string[] = [];
+        const missingAddressLineIds: string[] = [];
         const items = cart.cartItems || [];
 
         for (const it of items) {
             const qty = Number(it.quantity || 1);
-
-            // productos
             const lineProducts = (it.price || 0) * qty;
             productSubtotal += lineProducts;
 
-            // envío por ÍTEM (sin IVA)
             let lineShipping = 0;
             const isDelivery = it?.deliveryAddress?.mode === "delivery";
             if (isDelivery) {
@@ -224,13 +224,8 @@ export default function CostSummary({
             });
         }
 
-        // Subtotal visible = productos + envío
         const subtotal = productSubtotal + shippingTotal;
-
-        // ✅ IVA solo sobre productos (no sobre envío)
         const iva = Math.round(productSubtotal * TAX_RATE);
-
-        // Total = subtotal + IVA (siendo IVA solo de productos)
         const total = subtotal + iva;
 
         return {
@@ -246,7 +241,6 @@ export default function CostSummary({
         };
     }, [cart.cartItems]);
 
-    // ======== VALIDACIONES GLOBALES =========
     const buyer = cart?.buyer || {};
     const fullNameOk = Boolean((buyer.firstName || "").trim());
     const phoneOk = !!buyer.phone && buyer.phone.replace(/\D/g, "").length === 10;
@@ -255,7 +249,7 @@ export default function CostSummary({
     const hasPendingShipping = pendingShippingLineIds.length > 0;
     const hasMissingAddress = missingAddressLineIds.length > 0;
 
-    const blockingIssues = [];
+    const blockingIssues: string[] = [];
     if (isCartEmpty) blockingIssues.push("Tu carrito está vacío.");
     if (!fullNameOk) blockingIssues.push("Falta el nombre del comprador.");
     if (!phoneOk) blockingIssues.push("El teléfono debe tener 10 dígitos (MX).");
@@ -267,42 +261,34 @@ export default function CostSummary({
 
     const allValid = blockingIssues.length === 0;
 
-    // Submit con modal + redirect a /success?orderId=...
     const handleCreateOrder = async () => {
         setSubmitting(true);
         setPhase("Preparando orden…");
 
         try {
-            const localOrderId = uuid(); // ID local (cliente)
+            const localOrderId = uuid();
             const payload = buildOrderPayload(cart, localOrderId);
 
-            // Empareja cart ↔ payload para obtener File + s3Key
-            const filesToUpload = [];
-            (cart.cartItems || []).forEach((cartIt, i) => {
-                const pItem = payload.cartItems[i];
-                (cartIt.images || []).forEach((img, j) => {
+            const filesToUpload: { key: string; file: File }[] = [];
+            (cart.cartItems || []).forEach((cartIt: any, i: number) => {
+                const pItem = (payload as any).cartItems[i];
+                (cartIt.images || []).forEach((img: any, j: number) => {
                     const meta = pItem.images[j];
                     if (meta?.s3Key && img?.file) {
-                        filesToUpload.push({
-                            key: meta.s3Key,
-                            file: img.file,
-                            contentType: img.type || "application/octet-stream",
-                        });
+                        filesToUpload.push({ key: meta.s3Key, file: img.file });
                     }
                 });
             });
 
-            // Subida de imágenes (secuencial simple)
             for (let idx = 0; idx < filesToUpload.length; idx++) {
                 const f = filesToUpload[idx];
                 setPhase(`Subiendo imágenes… (${idx + 1}/${filesToUpload.length})`);
-                const { url } = await getPresignPut(f.key, f.contentType);
-                await uploadWithPresignedPut(url, f.file, f.contentType);
+                const { url } = await getPresignPut(f.key);
+                await uploadWithPresignedPut(url, f.file);
             }
 
-            // Crear orden
             setPhase("Creando orden…");
-            const res = await fetch(process.env.NEXT_PUBLIC_CREATE_ORDER_URL, {
+            const res = await fetch(process.env.NEXT_PUBLIC_CREATE_ORDER_URL as string, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -310,16 +296,12 @@ export default function CostSummary({
             if (!res.ok) throw new Error(`Order API failed: ${res.status}`);
             const data = await res.json();
 
-            // Determinar orderId final (servidor puede generar uno diferente tipo "ord_...")
-            const orderIdFromResp =
-                data?.orderId || data?.session?.metadata?.orderId || localOrderId;
+            const orderIdFromResp = data?.orderId || data?.session?.metadata?.orderId || localOrderId;
 
-            // Callback externo
             try {
                 onSubmit?.(payload, { orderId: orderIdFromResp, apiResponse: data });
             } catch {}
 
-            // Redirect a success
             setPhase("Redirigiendo…");
             router.push(`/success?orderId=${encodeURIComponent(orderIdFromResp)}`);
         } catch (err) {
@@ -331,7 +313,6 @@ export default function CostSummary({
 
     return (
         <>
-            {/* Modal de cargando */}
             {submitting && (
                 <div className="fixed inset-0 z-50 grid place-items-center bg-white/70 backdrop-blur-sm animate-fadeIn">
                     <div className="rounded-2xl border bg-white shadow-lg px-6 py-5 w-[min(90vw,420px)] text-center">
@@ -343,9 +324,8 @@ export default function CostSummary({
             )}
 
             <div className="space-y-4">
-                {/* Desglose por ítem */}
                 <ul className="divide-y divide-gray-100">
-                    {lines.map((ln) => (
+                    {lines.map((ln: any) => (
                         <li key={ln.lineId} className="py-3">
                             <div className="flex items-start justify-between gap-4">
                                 <div className="min-w-0">
@@ -377,7 +357,6 @@ export default function CostSummary({
                     ))}
                 </ul>
 
-                {/* Totales */}
                 <div className="border-t pt-3 space-y-2 text-sm">
                     <div className="flex items-center justify-between">
                         <span className="text-gray-600">Subtotal productos</span>
@@ -402,12 +381,11 @@ export default function CostSummary({
                     <div className="flex items-center justify-between pt-2 border-t">
                         <span className="text-base font-semibold text-gray-900">Total</span>
                         <span className="text-base font-semibold text-gray-900 tabular-nums">
-                      {money(total)}
-                    </span>
+              {money(total)}
+            </span>
                     </div>
                 </div>
 
-                {/* Pendientes */}
                 {!allValid && (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 space-y-1">
                         {blockingIssues.map((msg, i) => (
@@ -426,7 +404,7 @@ export default function CostSummary({
                             className="w-full inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold bg-brand-pink text-white hover:opacity-90 disabled:opacity-60 transition"
                             title={submitLabel}
                         >
-                            {submitting ? "Procesando..." : (loading ? "Procesando..." : submitLabel)}
+                            {submitting ? "Procesando..." : loading ? "Procesando..." : submitLabel}
                         </button>
                     </div>
                 )}
