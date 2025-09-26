@@ -5,7 +5,6 @@ import IntroHero from "@/components/hero/IntroHero";
 
 export default function Home() {
     const heroImgs = [
-        "/media/sb-01.webp",
         "/media/sb-02.webp",
         "/media/sb-03.webp",
     ];
