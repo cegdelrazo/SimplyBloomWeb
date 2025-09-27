@@ -38,14 +38,12 @@ function titleByStatus(k) {
 }
 
 /* ==================== Timeline (verde, simplificada) ==================== */
-// Solo: PENDING_PAYMENT -> PAY_COMPLETE -> DELIVERED
 const STATUS_ORDER = ["PENDING_PAYMENT", "PAY_COMPLETE", "DELIVERED"];
 const LABELS = {
     PENDING_PAYMENT: "Orden creada",
     PAY_COMPLETE: "Pago completado",
     DELIVERED: "Entregada",
 };
-// PROCESSING/SHIPPED se muestran como PAY_COMPLETE para no romper la vista
 const TIMELINE_FALLBACK = {
     PROCESSING: "PAY_COMPLETE",
     SHIPPED: "PAY_COMPLETE",
@@ -126,7 +124,7 @@ function Thumbs({ images = [] }) {
                     title={img.originalName || `imagen ${idx + 1}`}
                 >
                     <img
-                        src={img.signedUrl}
+                        src={img.signedUrl || img.url || img.src}
                         alt={`miniatura ${idx + 1}`}
                         className="w-full h-full object-cover"
                     />
@@ -157,9 +155,13 @@ function ItemCard({ it }) {
                         </h3>
                         {productName && (
                             <div className="mt-0.5">
-                                <div className="text-sm text-gray-800">Plantilla ({productName})</div>
+                                <div className="text-sm text-gray-800">
+                                    Plantilla ({productName})
+                                </div>
                                 {productSubtitle && (
-                                    <div className="text-xs text-gray-500">Plantilla ({productSubtitle})</div>
+                                    <div className="text-xs text-gray-500">
+                                        Plantilla ({productSubtitle})
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -248,33 +250,60 @@ export default function SuccessClient() {
                 return;
             }
 
-            // Construye endpoint
-            const url = orderId
+            // Construye endpoint primario
+            const primaryUrl = orderId
                 ? `${base}/orders/${encodeURIComponent(orderId)}`
                 : `${base}/orders?session_id=${encodeURIComponent(sessionId)}`;
 
             try {
-                const res = await fetch(url, { cache: "no-store" });
+                const res = await fetch(primaryUrl, { cache: "no-store" });
                 if (!res.ok) {
                     const t = await res.text().catch(() => "");
                     throw new Error(`Error ${res.status} ${t || ""}`.trim());
                 }
                 const data = await res.json();
 
-                // Normalización:
-                let orderObj;
-                if (orderId) {
+                // === Normalización robusta ===
+                let orderObj = null;
+
+                // Caso 1: ya es detalle completo (típico con /orders/{orderId} y también
+                // cuando el backend ya unificó /orders?session_id al mismo shape)
+                const looksLikeDetail =
+                    data &&
+                    typeof data === "object" &&
+                    (Array.isArray(data.items) || data.items === undefined) &&
+                    (data.amounts || data.payment || data.status || data.orderId);
+
+                if (looksLikeDetail) {
                     orderObj = data;
                 } else {
+                    // Caso 2: legacy: vino listado { items: [...], count }
                     const list = Array.isArray(data?.items) ? data.items : [];
-                    orderObj =
-                        list.find((o) => o?.payment?.sessionId === sessionId) ||
-                        list[0] ||
-                        null;
+                    if (list.length === 0) {
+                        orderObj = null;
+                    } else {
+                        // Busca item con sessionId si estuviera disponible,
+                        // si no, toma el primero y rehace fetch al detalle por orderId
+                        const bySession =
+                            list.find((o) => o?.payment?.sessionId === sessionId) || list[0];
+                        const ordId = bySession?.orderId;
+                        if (ordId) {
+                            const detailRes = await fetch(
+                                `${base}/orders/${encodeURIComponent(ordId)}`,
+                                { cache: "no-store" }
+                            );
+                            if (!detailRes.ok) {
+                                throw new Error(`Error detalle ${detailRes.status}`);
+                            }
+                            orderObj = await detailRes.json();
+                        } else {
+                            orderObj = null;
+                        }
+                    }
                 }
 
                 if (!orderObj) {
-                    setErr("No se encontró la orden para ese session_id.");
+                    setErr("No se encontró la orden.");
                     setOrder(null);
                 } else {
                     setOrder(orderObj);
@@ -284,7 +313,6 @@ export default function SuccessClient() {
                 setErr("No se pudo cargar la orden.");
                 setOrder(null);
             } finally {
-                const _ = sessionId; // evita warning de dependencia sin usar
                 setLoading(false);
             }
         }
@@ -301,7 +329,8 @@ export default function SuccessClient() {
         );
     }
 
-    if (err) return <div className="max-w-4xl mx-auto p-8 text-brand-pink">{err}</div>;
+    if (err)
+        return <div className="max-w-4xl mx-auto p-8 text-brand-pink">{err}</div>;
     if (!order) return <div className="max-w-4xl mx-auto p-8">Sin datos de orden.</div>;
 
     const statusKey = (order?.status || "").toUpperCase();
@@ -322,11 +351,6 @@ export default function SuccessClient() {
                         <p className="text-sm text-gray-600">
                             Número de orden: <b>{order.orderId}</b>
                         </p>
-                        {order._resolvedBy && (
-                            <p className="text-xs text-gray-400">
-                                fuente: {order._resolvedBy === "orderId" ? "orderId" : "session_id"}
-                            </p>
-                        )}
                         <p className="text-xs text-gray-500 uppercase tracking-wide mt-1">
                             {statusText}
                         </p>

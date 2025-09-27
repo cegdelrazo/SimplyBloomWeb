@@ -53,10 +53,10 @@ export default function AdminItemsPage() {
         setLoading(true);
         setErr("");
         try {
-            const qs = new URLSearchParams({ limit: "50" });
+            const qs = new URLSearchParams({ limit: "100" });
             if (token) qs.set("nextToken", token);
 
-            const res = await fetch(`${API_BASE}/orders?${qs.toString()}`, {
+            const res = await fetch(`${API_BASE}/orders/list?${qs.toString()}`, {
                 cache: "no-store",
             });
             if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);

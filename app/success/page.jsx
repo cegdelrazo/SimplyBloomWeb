@@ -2,8 +2,8 @@
 import { Suspense } from "react";
 import SuccessClient from "./SuccessClient";
 
-export const dynamic = "force-dynamic"; // evita prerender estático (recomendado aquí)
-export const metadata = { title: "Success" }; // NADA de themeColor aquí
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Success" };
 
 export default function SuccessPage() {
     return (
