@@ -35,7 +35,6 @@ export default function CartItem({ item }) {
         syncAddress({ mode });
     };
 
-    // Simula y guarda envío cuando cambia C.P.
     const handleCpChange = (cp) => {
         const sim = simulateShippingByCP(cp);
         dispatch({
@@ -54,21 +53,17 @@ export default function CartItem({ item }) {
         });
     };
 
-    // ⬇️ Eliminar ítem
     const removeItem = useCallback(() => {
         dispatch({ type: "REMOVE_ITEM_CART", payload: item.lineId });
     }, [dispatch, item.lineId]);
 
     const confirmAndRemove = useCallback(() => {
-        // Si no quieres confirmación, llama directamente removeItem()
-        if (window.confirm("¿Eliminar este artículo del carrito?")) {
-            removeItem();
-        }
+        if (window.confirm("¿Eliminar este artículo del carrito?")) removeItem();
     }, [removeItem]);
 
     return (
         <article className="border-b border-gray-100 py-6 space-y-4">
-            {/* Encabezado + botón eliminar */}
+            {/* Encabezado */}
             <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                     <ItemHeaderRow
@@ -81,7 +76,8 @@ export default function CartItem({ item }) {
                     />
                 </div>
 
-                <div className="shrink-0">
+                {/* Botón eliminar: sólo desktop/tablet (evita chocar con el precio) */}
+                <div className="hidden md:block shrink-0">
                     <button
                         type="button"
                         onClick={confirmAndRemove}
@@ -95,8 +91,20 @@ export default function CartItem({ item }) {
                 </div>
             </div>
 
-            <MessageNote title={options?.title} message={options?.message} />
+            {/* Botón eliminar en su propio bloque para mobile */}
+            <div className="md:hidden">
+                <button
+                    type="button"
+                    onClick={confirmAndRemove}
+                    className="w-full rounded-md border px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    aria-label={`Eliminar ${product?.name || item?.name || "artículo"}`}
+                    title="Eliminar"
+                >
+                    ✕ Eliminar
+                </button>
+            </div>
 
+            <MessageNote title={options?.title} message={options?.message} />
             <ImagesStrip lineId={item.lineId} images={item.images} />
 
             <div className="space-y-3">
