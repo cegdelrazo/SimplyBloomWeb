@@ -33,12 +33,25 @@ export const tomorrowStrLocal = () => {
     return `${y}-${m}-${day}`;
 };
 
-const cutoffHourForCity = (cityName) => (cityName === "CDMX" ? 16 : 15);
+const cutoffHourForCity = (cityName) => (cityName === "CDMX" ? 20 : 21);
 
+/**
+ * Valida si ya es tarde para comprar para entrega mañana.
+ * Siempre evalúa en hora de Ciudad de México (America/Mexico_City).
+ */
 export const shouldWarnLateForTomorrow = (selectedCityObj, selectedDateStr, tomorrowStr) => {
     if (!selectedCityObj || !selectedDateStr) return false;
+
+    // Hora actual en CDMX
     const now = new Date();
-    const hour = now.getHours();
+    const hourCdmx = Number(
+        now.toLocaleString("es-MX", {
+            timeZone: "America/Mexico_City",
+            hour: "numeric",
+            hour12: false,
+        })
+    );
+
     const cutoff = cutoffHourForCity(selectedCityObj.city);
-    return selectedDateStr === tomorrowStr && hour >= cutoff;
+    return selectedDateStr === tomorrowStr && hourCdmx >= cutoff;
 };

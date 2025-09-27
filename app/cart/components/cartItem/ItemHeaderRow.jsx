@@ -41,13 +41,11 @@ export default function ItemHeaderRow({
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                     {city && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] text-gray-700">
-              <span>📍</span>
               <span className="font-medium">{city}</span>
             </span>
                     )}
                     {date && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] text-gray-700">
-              <span>📅</span>
               <span className="font-medium">{formatDateMX(date)}</span>
             </span>
                     )}
