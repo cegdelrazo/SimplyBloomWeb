@@ -9,7 +9,7 @@ export default function EmptyCart() {
             {/* Icono carrito (SVG) */}
             <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-32 h-32 mb-6 drop-shadow-lg"  // 👈 reducido de w-40 h-40
+                className="w-24 h-24 mb-6 drop-shadow-lg"  // 👈 reducido de w-40 h-40
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="black"
