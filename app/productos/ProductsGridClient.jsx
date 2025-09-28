@@ -52,24 +52,6 @@ export default function ProductsGridClient({ initialProducts = [], categories = 
 
     return (
         <>
-            {/* Controles */}
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-3">
-                {/* Búsqueda */}
-                <div className="md:col-span-2">
-                    <label className="sr-only" htmlFor="q">Buscar</label>
-                    <input
-                        id="q"
-                        type="search"
-                        value={query}
-                        onChange={(e) => { setQuery(e.target.value); setVisible(pageSize); }}
-                        placeholder="Buscar por nombre, descripción…"
-                        className="w-full rounded-lg border px-3 py-2"
-                    />
-                </div>
-
-                {/* Categoría */}
-
-            </div>
 
             {/* Grid */}
             <div
