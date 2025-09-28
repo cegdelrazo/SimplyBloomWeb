@@ -1,5 +1,6 @@
 import Image from "next/image";
 import SnapCarousel from "./SnapCarousel";
+import InfiniteStrip from "./InfiniteStrip";
 
 export const metadata = {
     title: "Eventos y Talleres | SimplyBloom",
@@ -12,26 +13,6 @@ const cities = ["CDMX", "GDL", "MTY"];
 export default function EventosTalleresPage() {
     return (
         <main className="min-h-screen bg-white">
-            {/* ======= HERO 1 ======= */}
-            <section className="relative w-full">
-                <div className="relative h-[46vh] md:h-[62vh]">
-                    <Image
-                        src="/events/hero-1.jpg"
-                        alt="Eventos y talleres con flores"
-                        fill
-                        priority
-                        className="object-cover"
-                        sizes="100vw"
-                    />
-                    <div className="absolute inset-0 bg-black/10" />
-                    <div className="absolute inset-x-0 top-6 text-center">
-                        <p className="font-serif tracking-widest text-sm md:text-base text-gray-800 drop-shadow">
-                            EVENTOS Y TALLERES
-                        </p>
-                    </div>
-                </div>
-            </section>
-
             {/* ======= CIUDADES ======= */}
             <section className="max-w-4xl mx-auto px-4 py-6">
                 <div
@@ -62,18 +43,12 @@ export default function EventosTalleresPage() {
                 </p>
             </section>
 
-            {/* ======= HERO 2 ======= */}
-            <section className="relative w-full">
-                <div className="relative h-[38vh] md:h-[54vh]">
-                    <Image
-                        src="/events/hero-2.jpg"
-                        alt="Muestras de arreglos y montaje"
-                        fill
-                        className="object-cover"
-                        sizes="100vw"
-                    />
-                    <div className="absolute inset-0 bg-black/10" />
-                </div>
+            {/* ======= CARRUSEL INFINITO (EVENTOS) ======= */}
+            <section className="w-full">
+                <InfiniteStrip
+                    images={Array.from({ length: 10 }, (_, i) => `/events/gallery/events/${i + 1}.jpg`)}
+                    speed={45}
+                />
             </section>
 
             {/* ======= TALLERES ======= */}
@@ -88,14 +63,13 @@ export default function EventosTalleresPage() {
                 </p>
             </section>
 
-            {/* ======= CARRUSEL ======= */}
-            <section className="max-w-6xl mx-auto px-4 pb-16">
-                <SnapCarousel
-                    images={Array.from({ length: 10 }, (_, i) => `/events/gallery/${i + 1}.jpg`)}
+            {/* ======= CARRUSEL INFINITO (TALLERES) ======= */}
+            <section className="w-full pb-16">
+                <InfiniteStrip
+                    images={Array.from({ length: 16 }, (_, i) => `/events/gallery/talleres/${i + 1}.jpg`)}
+                    speed={45}
                 />
             </section>
-
-
         </main>
     );
 }
