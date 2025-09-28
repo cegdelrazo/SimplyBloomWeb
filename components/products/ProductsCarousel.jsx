@@ -9,7 +9,12 @@ export default function ProductsCarousel({ title = "PRODUCTOS", viewAllHref = "#
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <h2 className="text-3xl md:text-4xl font-semibold">{title}</h2>
-
+                <a
+                    href={viewAllHref}
+                    className="inline-flex items-center gap-2 rounded-full border-2 px-6 py-2 text-lg hover:shadow-sm"
+                >
+                    VER TODOS
+                </a>
             </div>
 
             <div
