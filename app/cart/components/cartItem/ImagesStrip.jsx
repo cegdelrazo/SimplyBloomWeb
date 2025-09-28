@@ -130,9 +130,6 @@ export default function ImagesStrip({
             >
                 Agregar imágenes
             </button>
-            <span className="text-[11px] text-gray-500">
-        Puedes agregar {remainingSlots} más (máx. {maxImages})
-      </span>
         </div>
     );
 
@@ -174,12 +171,6 @@ export default function ImagesStrip({
                         <p className="text-sm text-gray-600">
                             Aún no has agregado imágenes.
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Arrastra y suelta aquí o usa el botón “Agregar imágenes”.
-                        </p>
-                        <div className="mt-3">
-                            <AddButton />
-                        </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

@@ -2,8 +2,9 @@
 
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
+import { useMemo, useRef } from "react";
 
-// Validación
+// ================= Validación =================
 const AddressSchema = Yup.object({
     fullName: Yup.string().trim().required("Requerido"),
     phone: Yup.string()
@@ -22,46 +23,71 @@ function Error({ name }) {
     return <ErrorMessage name={name} component="div" className="mt-1 text-[11px] text-red-600" />;
 }
 
+// Debounce util
+const debounce = (fn, ms = 300) => {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+};
+
 export default function EditForm({
-     initialValues,
-     isFirstTime = false,
-     onSaved,
-     onCancel,
-     onCpChange,
-     onPartialChange,
-     shipping,
- }) {
+                                     initialValues,
+                                     isFirstTime = false,
+                                     onSaved,
+                                     onCancel,
+                                     onCpChange,
+                                     onPartialChange, // <- seguirá existiendo pero la llamaremos SOLO en blur/debounce
+                                     shipping,
+                                 }) {
+    // Notificador al padre con debounce (para evitar “auto-guardar” inmediato)
+    const notifyParent = useMemo(
+        () => (onPartialChange ? debounce(onPartialChange, 300) : null),
+        [onPartialChange]
+    );
+
     return (
         <Formik
             initialValues={initialValues}
             validationSchema={AddressSchema}
-            enableReinitialize
             validateOnBlur
             validateOnChange
-            onSubmit={(values, { setSubmitting }) => {
+            // PROTECCIÓN: ignorar submits que no vengan del botón "Guardar"
+            onSubmit={(values, { setSubmitting, event }) => {
+                const submitter = event?.nativeEvent?.submitter;
+                const fromSaveButton = submitter?.getAttribute?.("name") === "saveBtn";
+                if (!fromSaveButton) {
+                    setSubmitting(false);
+                    return; // Ignora cualquier submit “fantasma”
+                }
                 onSaved?.(values);
                 setSubmitting(false);
             }}
         >
-            {({ values, isSubmitting, isValid, setFieldValue }) => {
+            {({ values, isSubmitting, isValid, setFieldValue, handleBlur }) => {
                 const cpValid = /^\d{5}$/.test(values.cp);
 
-                const setPartial = (field, transform) => (e) => {
+                // Cambios “silenciosos”: NO notifican al padre en cada tecla
+                const setPartialSilent = (field, transform) => (e) => {
                     const raw = e.target.value;
                     const v = transform ? transform(raw) : raw;
                     setFieldValue(field, v, true);
-                    onPartialChange?.({ ...values, [field]: v });
+                };
+
+                // Notificar al padre SOLO en blur (y opcionalmente debounce)
+                const notifyFieldOnBlur = (field) => (e) => {
+                    handleBlur(e); // mantiene la validación de Formik
+                    if (notifyParent) notifyParent({ ...values, [field]: values[field] });
                 };
 
                 const handleCp = (e) => {
                     const v = e.target.value.replace(/\D/g, "").slice(0, 5);
                     setFieldValue("cp", v, true);
-                    onPartialChange?.({ ...values, cp: v });
+                    // Para CP sí podemos notificar de inmediato si lo necesitas
                     onCpChange?.(v);
+                    if (notifyParent) notifyParent({ ...values, cp: v });
                 };
 
                 return (
-                    <Form className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <Form className="grid grid-cols-1 md:grid-cols-12 gap-3" noValidate>
                         {/* ==== Contacto ==== */}
                         <div className="md:col-span-12">
                             <p className="text-xs font-semibold text-gray-900">Contacto</p>
@@ -74,7 +100,8 @@ export default function EditForm({
                                 as="input"
                                 className="mt-1 w-full rounded-lg border px-3 py-2"
                                 placeholder="Nombre y apellido"
-                                onChange={setPartial("fullName")}
+                                onChange={setPartialSilent("fullName")}
+                                onBlur={notifyFieldOnBlur("fullName")}
                             />
                             <Error name="fullName" />
                         </div>
@@ -89,7 +116,8 @@ export default function EditForm({
                                 maxLength={10}
                                 className="mt-1 w-full rounded-lg border px-3 py-2"
                                 placeholder="5512345678"
-                                onChange={setPartial("phone", v => v.replace(/\D/g, "").slice(0, 10))}
+                                onChange={setPartialSilent("phone", v => v.replace(/\D/g, "").slice(0, 10))}
+                                onBlur={notifyFieldOnBlur("phone")}
                             />
                             <Error name="phone" />
                         </div>
@@ -112,17 +140,16 @@ export default function EditForm({
                                 className="mt-1 w-full rounded-lg border px-3 py-2"
                                 placeholder="11560"
                                 onChange={handleCp}
+                                onBlur={notifyFieldOnBlur("cp")}
                             />
                             <Error name="cp" />
 
-                            {/* ⬇️ Estado de envío según simulación */}
+                            {/* Estado de envío */}
                             <div className="mt-2 text-[12px]">
                                 {values.cp?.length === 5 ? (
                                     shipping?.valid ? (
                                         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-800">
-                                            <div className="font-medium">
-                                                Envío: ${shipping.cost}
-                                            </div>
+                                            <div className="font-medium">Envío: ${shipping.cost}</div>
                                         </div>
                                     ) : (
                                         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
@@ -149,7 +176,8 @@ export default function EditForm({
                                 as="input"
                                 className="mt-1 w-full rounded-lg border px-3 py-2"
                                 placeholder="Calle"
-                                onChange={setPartial("street")}
+                                onChange={setPartialSilent("street")}
+                                onBlur={notifyFieldOnBlur("street")}
                                 disabled={!cpValid}
                             />
                             <Error name="street" />
@@ -162,7 +190,8 @@ export default function EditForm({
                                 as="input"
                                 className="mt-1 w-full rounded-lg border px-3 py-2"
                                 placeholder="123"
-                                onChange={setPartial("extNumber")}
+                                onChange={setPartialSilent("extNumber")}
+                                onBlur={notifyFieldOnBlur("extNumber")}
                                 disabled={!cpValid}
                             />
                             <Error name="extNumber" />
@@ -175,8 +204,13 @@ export default function EditForm({
                                 as="input"
                                 className="mt-1 w-full rounded-lg border px-3 py-2"
                                 placeholder="Colonia"
-                                onChange={setPartial("neighborhood")}
+                                onChange={setPartialSilent("neighborhood")}     // ⬅️ sin notificar en cada tecla
+                                onBlur={notifyFieldOnBlur("neighborhood")}      // ⬅️ notifica SOLO al salir del campo
                                 disabled={!cpValid}
+                                autoComplete="off"
+                                autoCorrect="off"
+                                spellCheck={false}
+                                autoCapitalize="none"
                             />
                             <Error name="neighborhood" />
                         </div>
@@ -193,6 +227,7 @@ export default function EditForm({
                             )}
                             <button
                                 type="submit"
+                                name="saveBtn" // ⬅️ para identificar el submit legítimo
                                 disabled={isSubmitting || !isValid}
                                 className={`rounded-lg px-4 py-2 text-sm text-white ${
                                     isSubmitting || !isValid ? "bg-gray-300 cursor-not-allowed" : "bg-gray-900 hover:bg-black"
