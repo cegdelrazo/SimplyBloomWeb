@@ -1,6 +1,4 @@
-import Image from "next/image";
-import SnapCarousel from "./SnapCarousel";
-import InfiniteStrip from "./InfiniteStrip";
+import PhotoStrip from "./InfiniteStrip";
 
 export const metadata = {
     title: "Eventos y Talleres | SimplyBloom",
@@ -45,9 +43,9 @@ export default function EventosTalleresPage() {
 
             {/* ======= CARRUSEL INFINITO (EVENTOS) ======= */}
             <section className="w-full">
-                <InfiniteStrip
+                <PhotoStrip
                     images={Array.from({ length: 10 }, (_, i) => `/events/gallery/events/${i + 1}.jpg`)}
-                    speed={45}
+                    speed={28} height={240} gap={0}
                 />
             </section>
 
@@ -65,9 +63,9 @@ export default function EventosTalleresPage() {
 
             {/* ======= CARRUSEL INFINITO (TALLERES) ======= */}
             <section className="w-full pb-16">
-                <InfiniteStrip
+                <PhotoStrip
                     images={Array.from({ length: 16 }, (_, i) => `/events/gallery/talleres/${i + 1}.jpg`)}
-                    speed={45}
+                    speed={28} height={240} gap={0}
                 />
             </section>
         </main>
