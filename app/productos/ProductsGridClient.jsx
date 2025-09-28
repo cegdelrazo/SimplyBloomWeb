@@ -80,7 +80,7 @@ export default function ProductsGridClient({ initialProducts = [], categories = 
             >
                 {toShow.map((p) => (
                     <div key={p.id} data-card>
-                        <ProductCard {...p} />
+                        <ProductCard {...p} variant="grid" />
                     </div>
                 ))}
             </div>

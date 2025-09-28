@@ -23,7 +23,7 @@ export default function ProductsCarousel({ title = "PRODUCTOS", viewAllHref = "#
             >
                 {PRODUCTS.map((p) => (
                     <div key={p.id} data-card>
-                        <ProductCard {...p} />
+                        <ProductCard {...p} variant="carousel" />
                     </div>
                 ))}
             </div>
