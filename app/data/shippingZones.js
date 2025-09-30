@@ -17,7 +17,7 @@ const shippingZones = [
   { "id": "cdmx-tlalpan", "city": "CDMX", "label": "Tlalpan", "min": 14000, "max": 14999, "price": 250 },
   { "id": "cdmx-venustiano-carranza", "city": "CDMX", "label": "Venustiano Carranza", "min": 15000, "max": 15999, "price": 200 },
   { "id": "cdmx-xochimilco", "city": "CDMX", "label": "Xochimilco", "min": 16000, "max": 16999, "price": 300 },
-  { "id": "edomex-huixquilucan", "city": "Edomex", "label": "Huixquilucan", "min": 52700, "max": 52899, "price": 270 },
+  { "id": "edomex-huixquilucan", "city": "Edomex", "label": "Huixquilucan", "min": 52700, "max": 52899, "price": 200 },
   { "id": "edomex-atizapan", "city": "Edomex", "label": "Atizapán de Zaragoza", "min": 52900, "max": 52999, "price": 250 },
   { "id": "edomex-naucalpan", "city": "Edomex", "label": "Naucalpan de Juárez", "min": 53100, "max": 53999, "price": 140 },
   { "id": "edomex-tlalnepantla", "city": "Edomex", "label": "Tlalnepantla de Baz", "min": 54000, "max": 54199, "price": 230 },

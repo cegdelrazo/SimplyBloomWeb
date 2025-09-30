@@ -42,14 +42,15 @@ function getCartCities(cart) {
 }
 
 export default function OrderForm({
-      disabled,
-      helper,
-      total,
-      selected,
-      onAdded,
-      onSubmitReady,
-      product,
-  }) {
+                                      disabled,
+                                      helper,
+                                      total,
+                                      selected,
+                                      onAdded,
+                                      onSubmitReady,
+                                      onSubmitStateChange, // 🔹 Nuevo: callback al padre para reportar si el submit debe deshabilitarse
+                                      product,
+                                  }) {
     const { state, dispatch } = useGlobalContext();
     const router = useRouter();
     const cart = state?.cart;
@@ -113,9 +114,7 @@ export default function OrderForm({
             setSubmitting(false);
             setFieldError(
                 "city",
-                `Tu carrito ya contiene artículos de múltiples ciudades: ${cartCities.join(
-                    ", "
-                )}. Elimina los que no correspondan o vacía el carrito.`
+                `Tu carrito ya contiene artículos de múltiples ciudades: ${cartCities.join(", ")}. Elimina los que no correspondan o vacía el carrito.`
             );
             return;
         }
@@ -219,14 +218,39 @@ export default function OrderForm({
                     !!lockedCity && !!selectedCityName && selectedCityName !== lockedCity;
 
                 const cityBlockReason = isMultiCity
-                    ? `Tu carrito contiene artículos de múltiples ciudades (${cartCities.join(
-                        ", "
-                    )}).`
+                    ? `Tu carrito contiene artículos de múltiples ciudades (${cartCities.join(", ")}).`
                     : mismatch
                         ? `Tu carrito es de ${lockedCity}. Crea órdenes separadas por ciudad.`
                         : "";
 
                 const submitDisabledByCity = Boolean(isMultiCity || mismatch);
+
+                // 🔹 Unificamos todas las condiciones que ya usabas en el botón desktop
+                const lateBlock =
+                    shouldWarnLateForTomorrow(values.city, values.date, tomorrow) &&
+                    !values.lateConsent;
+
+                const unifiedDisabled =
+                    disabled ||
+                    isSubmitting ||
+                    submitDisabledByCity ||
+                    lateBlock ||
+                    !!errors.images;
+
+                // 🔹 Reportamos al padre para controlar el botón móvil
+                useEffect(() => {
+                    onSubmitStateChange && onSubmitStateChange(unifiedDisabled);
+                    // eslint-disable-next-line react-hooks/exhaustive-deps
+                }, [
+                    unifiedDisabled,
+                    disabled,
+                    isSubmitting,
+                    submitDisabledByCity,
+                    values.city,
+                    values.date,
+                    values.lateConsent,
+                    errors.images,
+                ]);
 
                 return (
                     <>
@@ -298,8 +322,6 @@ export default function OrderForm({
                                 />
                             </div>
 
-
-
                             {/* Título */}
                             <div>
                                 <label className="block text-sm font-medium mb-1">
@@ -318,8 +340,8 @@ export default function OrderForm({
                                         className="text-xs text-red-600"
                                     />
                                     <span className="text-[11px] text-gray-500">
-                    {values.title?.length || 0}/60
-                  </span>
+                                        {values.title?.length || 0}/60
+                                    </span>
                                 </div>
                             </div>
 
@@ -341,8 +363,8 @@ export default function OrderForm({
                                         className="text-xs text-red-600"
                                     />
                                     <span className="text-[11px] text-gray-500">
-                    {values.message?.length || 0}/240
-                  </span>
+                                        {values.message?.length || 0}/240
+                                    </span>
                                 </div>
                             </div>
 
@@ -426,21 +448,14 @@ export default function OrderForm({
                             <div className="pt-2 flex items-center justify-between">
                                 <span className="text-sm text-gray-600">Total</span>
                                 <span className="text-xl font-semibold">
-                  ${total} <span className="text-xs">MXN</span>
-                </span>
+                                    ${total} <span className="text-xs">MXN</span>
+                                </span>
                             </div>
 
                             {/* Desktop */}
                             <button
                                 type="submit"
-                                disabled={
-                                    disabled ||
-                                    isSubmitting ||
-                                    submitDisabledByCity || // ⬅️ bloquea por ciudad
-                                    (shouldWarnLateForTomorrow(values.city, values.date, tomorrow) &&
-                                        !values.lateConsent) ||
-                                    !!errors.images
-                                }
+                                disabled={unifiedDisabled}
                                 className="mt-2 hidden md:inline-flex items-center justify-center rounded-full border px-6 py-2 font-medium hover:bg-gray-50 disabled:opacity-60"
                                 title={
                                     submitDisabledByCity

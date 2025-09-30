@@ -30,6 +30,9 @@ export default function BouquetDetailClient({ product }) {
 
     const submitRef = useRef(null);
 
+    // 🔹 Nuevo: estado reportado por OrderForm para saber si el submit debe estar deshabilitado
+    const [mobileDisabled, setMobileDisabled] = useState(true);
+
     return (
         <main>
             <Hero src={heroSrc} title={product.name} subtitle={product.subtitle} />
@@ -51,6 +54,8 @@ export default function BouquetDetailClient({ product }) {
                         selected={selected}
                         onAdded={showToast}
                         onSubmitReady={(submitForm) => (submitRef.current = submitForm)}
+                        // 🔹 Nuevo: recibimos del form si el submit debe estar deshabilitado
+                        onSubmitStateChange={(isDisabled) => setMobileDisabled(isDisabled)}
                         product={product}
                     />
                 </aside>
@@ -58,7 +63,8 @@ export default function BouquetDetailClient({ product }) {
 
             <BottomBarMobile
                 total={selected?.price ?? 0}
-                disabled={!selected}
+                // 🔹 Cambiado: además de que no haya seleccionado ramo, respeta el estado del form
+                disabled={!selected || mobileDisabled}
                 onClick={() => submitRef.current && submitRef.current()}
             />
 
