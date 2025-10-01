@@ -6,6 +6,13 @@ export const metadata = {
         "Creamos y personalizamos experiencias con flores: eventos, talleres y mayoreo por ciudad.",
 };
 
+// Mapeo de ciudad → WhatsApp
+const CITY_LINKS = {
+    CDMX: "https://wa.link/r4swji",
+    GDL: "https://wa.me/523322029594",       // Guadalajara
+    MTY: "https://wa.me/528135666682",       // Monterrey
+};
+
 const cities = ["CDMX", "GDL", "MTY"];
 
 export default function EventosTalleresPage() {
@@ -18,15 +25,23 @@ export default function EventosTalleresPage() {
                     className="flex items-center justify-center gap-4 md:gap-8"
                 >
                     {cities.map((label) => (
-                        <span
+                        <a
                             key={label}
+                            href={CITY_LINKS[label] || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Contactar por WhatsApp (${label})`}
                             className="rounded-full border border-gray-800/70 px-6 py-2 md:px-8 md:py-2.5
-                         text-sm md:text-base bg-white shadow-sm select-none"
+                         text-sm md:text-base bg-white shadow-sm select-none
+                         hover:bg-gray-50 active:scale-[0.98] transition focus:outline-none focus:ring-2 focus:ring-gray-300"
                         >
-              {label}
-            </span>
+                            {label}
+                        </a>
                     ))}
                 </div>
+                <p className="mt-3 text-center text-xs text-gray-500">
+                    Toca tu ciudad para abrir WhatsApp.
+                </p>
             </section>
 
             {/* ======= EVENTOS ======= */}
@@ -45,7 +60,9 @@ export default function EventosTalleresPage() {
             <section className="w-full">
                 <PhotoStrip
                     images={Array.from({ length: 10 }, (_, i) => `/events/gallery/events/${i + 1}.jpg`)}
-                    speed={28} height={240} gap={0}
+                    speed={28}
+                    height={240}
+                    gap={0}
                 />
             </section>
 
@@ -65,7 +82,9 @@ export default function EventosTalleresPage() {
             <section className="w-full pb-16">
                 <PhotoStrip
                     images={Array.from({ length: 16 }, (_, i) => `/events/gallery/talleres/${i + 1}.jpg`)}
-                    speed={28} height={240} gap={0}
+                    speed={28}
+                    height={240}
+                    gap={0}
                 />
             </section>
         </main>

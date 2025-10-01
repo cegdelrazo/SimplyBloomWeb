@@ -24,8 +24,6 @@ async function uploadWithPresignedPut(url, file, contentType) {
     if (!up.ok) throw new Error(`upload failed: ${up.status}`);
 }
 
-const TAX_RATE = 0.16; // IVA 16% MX
-
 function money(n = 0) {
     return n.toLocaleString("es-MX", {
         style: "currency",
@@ -44,7 +42,12 @@ function checkAddressComplete(addrRaw) {
     const addr = addrRaw?.address ? { ...addrRaw, ...addrRaw.address } : addrRaw || {};
     const street = addr.street ?? addr.calle ?? addr.line1 ?? addr.address1;
     const ext =
-        addr.extNumber ?? addr.noExt ?? addr.numero ?? addr.exterior ?? addr.numExt ?? addr.outsideNumber;
+        addr.extNumber ??
+        addr.noExt ??
+        addr.numero ??
+        addr.exterior ??
+        addr.numExt ??
+        addr.outsideNumber;
     const neigh =
         addr.neighborhood ?? addr.colonia ?? addr.barrio ?? addr.col ?? addr.settlement;
     const fields = { street, ext, neigh };
@@ -110,7 +113,7 @@ function mapDelivery(it) {
     };
 }
 
-/** Construye payload final para crear orden (incluye itemId, s3Key por imagen y product minimal) */
+/** Construye payload final para crear orden */
 function buildOrderPayload(cart, orderId) {
     const items = cart?.cartItems || [];
 
@@ -125,7 +128,6 @@ function buildOrderPayload(cart, orderId) {
             s3Key: s3KeyForImage(orderId, itemId, img.name),
         }));
 
-        // Producto minimal desde el carrito
         const p = it?.product || {};
         const product = {
             id: p.id || null,
@@ -137,8 +139,8 @@ function buildOrderPayload(cart, orderId) {
             itemId,
             idBouquet: it?.productSlug || it?.id || "",
             message: { title: it?.options?.title || "", message: it?.options?.message || "" },
-            idProduct: getIdProduct(p), // numérico si lo necesitas en backend
-            product,                    // producto minimal
+            idProduct: getIdProduct(p),
+            product,
             delivery: mapDelivery(it),
             images,
         };
@@ -168,15 +170,12 @@ export default function CostSummary({
         state: { cart },
     } = useGlobalContext();
 
-    // Modal / submitting state
     const [submitting, setSubmitting] = useState(false);
     const [phase, setPhase] = useState("Preparando…");
 
     const {
         productSubtotal,
         shippingTotal,
-        subtotal,
-        iva,
         total,
         pendingShippingLineIds,
         missingAddressLineIds,
@@ -192,12 +191,9 @@ export default function CostSummary({
 
         for (const it of items) {
             const qty = Number(it.quantity || 1);
-
-            // productos
             const lineProducts = (it.price || 0) * qty;
             productSubtotal += lineProducts;
 
-            // envío por ÍTEM (sin IVA)
             let lineShipping = 0;
             const isDelivery = it?.deliveryAddress?.mode === "delivery";
             if (isDelivery) {
@@ -224,20 +220,11 @@ export default function CostSummary({
             });
         }
 
-        // Subtotal visible = productos + envío
-        const subtotal = productSubtotal + shippingTotal;
-
-        // ✅ IVA solo sobre productos (no sobre envío)
-        const iva = Math.round(productSubtotal * TAX_RATE);
-
-        // Total = subtotal + IVA (siendo IVA solo de productos)
-        const total = subtotal + iva;
+        const total = productSubtotal + shippingTotal;
 
         return {
             productSubtotal,
             shippingTotal,
-            subtotal,
-            iva,
             total,
             pendingShippingLineIds,
             missingAddressLineIds,
@@ -246,7 +233,6 @@ export default function CostSummary({
         };
     }, [cart.cartItems]);
 
-    // ======== VALIDACIONES GLOBALES =========
     const buyer = cart?.buyer || {};
     const fullNameOk = Boolean((buyer.firstName || "").trim());
     const phoneOk = !!buyer.phone && buyer.phone.replace(/\D/g, "").length === 10;
@@ -267,16 +253,14 @@ export default function CostSummary({
 
     const allValid = blockingIssues.length === 0;
 
-    // Submit con modal + redirect a /success?orderId=...
     const handleCreateOrder = async () => {
         setSubmitting(true);
         setPhase("Preparando orden…");
 
         try {
-            const localOrderId = uuid(); // ID local (cliente)
+            const localOrderId = uuid();
             const payload = buildOrderPayload(cart, localOrderId);
 
-            // Empareja cart ↔ payload para obtener File + s3Key
             const filesToUpload = [];
             (cart.cartItems || []).forEach((cartIt, i) => {
                 const pItem = payload.cartItems[i];
@@ -292,7 +276,6 @@ export default function CostSummary({
                 });
             });
 
-            // Subida de imágenes (secuencial simple)
             for (let idx = 0; idx < filesToUpload.length; idx++) {
                 const f = filesToUpload[idx];
                 setPhase(`Subiendo imágenes… (${idx + 1}/${filesToUpload.length})`);
@@ -300,7 +283,6 @@ export default function CostSummary({
                 await uploadWithPresignedPut(url, f.file, f.contentType);
             }
 
-            // Crear orden
             setPhase("Creando orden…");
             const res = await fetch(process.env.NEXT_PUBLIC_CREATE_ORDER_URL, {
                 method: "POST",
@@ -310,16 +292,13 @@ export default function CostSummary({
             if (!res.ok) throw new Error(`Order API failed: ${res.status}`);
             const data = await res.json();
 
-            // Determinar orderId final (servidor puede generar uno diferente tipo "ord_...")
             const orderIdFromResp =
                 data?.orderId || data?.session?.metadata?.orderId || localOrderId;
 
-            // Callback externo
             try {
                 onSubmit?.(payload, { orderId: orderIdFromResp, apiResponse: data });
             } catch {}
 
-            // Redirect a success
             setPhase("Redirigiendo…");
             router.push(`/success?orderId=${encodeURIComponent(orderIdFromResp)}`);
         } catch (err) {
@@ -331,7 +310,6 @@ export default function CostSummary({
 
     return (
         <>
-            {/* Modal de cargando */}
             {submitting && (
                 <div className="fixed inset-0 z-50 grid place-items-center bg-white/70 backdrop-blur-sm animate-fadeIn">
                     <div className="rounded-2xl border bg-white shadow-lg px-6 py-5 w-[min(90vw,420px)] text-center">
@@ -343,7 +321,6 @@ export default function CostSummary({
             )}
 
             <div className="space-y-4">
-                {/* Desglose por ítem */}
                 <ul className="divide-y divide-gray-100">
                     {lines.map((ln) => (
                         <li key={ln.lineId} className="py-3">
@@ -385,29 +362,18 @@ export default function CostSummary({
                     </div>
 
                     <div className="flex items-center justify-between">
-                        <span className="text-gray-600">IVA (16%)</span>
-                        <span className="tabular-nums">{money(iva)}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
                         <span className="text-gray-600">Envío</span>
                         <span className="tabular-nums">{money(shippingTotal)}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Subtotal general</span>
-                        <span className="tabular-nums">{money(subtotal)}</span>
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t">
                         <span className="text-base font-semibold text-gray-900">Total</span>
                         <span className="text-base font-semibold text-gray-900 tabular-nums">
-                      {money(total)}
-                    </span>
+              {money(total)}
+            </span>
                     </div>
                 </div>
 
-                {/* Pendientes */}
                 {!allValid && (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 space-y-1">
                         {blockingIssues.map((msg, i) => (
@@ -426,7 +392,7 @@ export default function CostSummary({
                             className="w-full inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold bg-brand-pink text-white hover:opacity-90 disabled:opacity-60 transition"
                             title={submitLabel}
                         >
-                            {submitting ? "Procesando..." : (loading ? "Procesando..." : submitLabel)}
+                            {submitting ? "Procesando..." : loading ? "Procesando..." : submitLabel}
                         </button>
                     </div>
                 )}

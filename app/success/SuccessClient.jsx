@@ -428,14 +428,6 @@ export default function SuccessClient() {
                                 <span>Envío</span>
                                 <b>{mxn(amounts.shippingTotal)}</b>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <span>Base gravable</span>
-                                <b>{mxn(amounts.taxBase)}</b>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span>IVA</span>
-                                <b>{mxn(amounts.iva)}</b>
-                            </div>
                             <div className="h-px bg-gray-200 my-2" />
                             <div className="flex items-center justify-between text-lg">
                                 <span>Total</span>
