@@ -8,7 +8,7 @@ export const metadata = {
 
 // Mapeo de ciudad → WhatsApp
 const CITY_LINKS = {
-    CDMX: "https://wa.link/r4swji",
+    CDMX: "https://wa.me/5518358013",
     GDL: "https://wa.me/523322029594",       // Guadalajara
     MTY: "https://wa.me/528135666682",       // Monterrey
 };

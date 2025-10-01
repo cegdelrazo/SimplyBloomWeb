@@ -26,7 +26,7 @@ export default function LateWarningModal({
     const whatsappUrl = useMemo(() => {
         if (!cityName) return "https://wa.me/523322029594"; // fallback
         const map = {
-            CDMX: "https://wa.link/r4swji",
+            CDMX: "https://wa.me/5518358013",
             Guadalajara: "https://wa.me/523322029594",
             Monterrey: "https://wa.me/528135666682",
         };
