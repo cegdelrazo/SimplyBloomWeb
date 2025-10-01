@@ -33,6 +33,35 @@ export default function AdminItemsPage() {
     const router = useRouter();
     const API_BASE = (process.env.NEXT_PUBLIC_ORDER_API_BASE || "").replace(/\/+$/, "");
 
+    /* ===== Auth ===== */
+    const [adminKey, setAdminKey] = useState("");
+    const [authOk, setAuthOk] = useState(false);
+
+    useEffect(() => {
+        const k = localStorage.getItem("admin_key") || "";
+        if (k) {
+            setAdminKey(k);
+            setAuthOk(true);
+        }
+    }, []);
+
+    function onSaveKey(e) {
+        e?.preventDefault?.();
+        if (!adminKey.trim()) return;
+        localStorage.setItem("admin_key", adminKey.trim());
+        setAuthOk(true);
+    }
+
+    function logout() {
+        localStorage.removeItem("admin_key");
+        setAdminKey("");
+        setAuthOk(false);
+        // limpiar datos visibles al salir
+        setItems([]);
+        setNextToken("");
+        setErr("");
+    }
+
     /* ===== Data ===== */
     const [items, setItems] = useState([]);
     const [nextToken, setNextToken] = useState("");
@@ -58,7 +87,15 @@ export default function AdminItemsPage() {
 
             const res = await fetch(`${API_BASE}/orders/list?${qs.toString()}`, {
                 cache: "no-store",
+                headers: authOk ? { "x-admin-key": adminKey } : {},
             });
+
+            if (res.status === 401 || res.status === 403) {
+                // clave inválida o faltante → forzar logout
+                logout();
+                return;
+            }
+
             if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
             const data = await res.json();
             setItems((prev) =>
@@ -73,9 +110,11 @@ export default function AdminItemsPage() {
     }
 
     useEffect(() => {
-        fetchItemsFromApi();
+        if (authOk) {
+            fetchItemsFromApi();
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [authOk]);
 
     /* ===== Opciones de ciudad ===== */
     const cityOptions = useMemo(() => {
@@ -112,15 +151,69 @@ export default function AdminItemsPage() {
         setFOrderId("");
     };
 
+    /* ===== UI: Login si no auth ===== */
+    if (!authOk) {
+        return (
+            <div className="min-h-[100dvh] grid place-items-center bg-white">
+                <form
+                    onSubmit={onSaveKey}
+                    className="w-full max-w-sm rounded-2xl border p-6 shadow-sm space-y-4"
+                >
+                    <h1 className="text-xl font-semibold">Panel de vendedor</h1>
+                    <label className="block text-sm text-gray-700">
+                        Clave de administración
+                        <input
+                            type="password"
+                            value={adminKey}
+                            onChange={(e) => setAdminKey(e.target.value)}
+                            className="mt-1 w-full rounded-md border px-3 py-2"
+                            placeholder="Ingresa tu clave"
+                        />
+                    </label>
+                    <button
+                        type="submit"
+                        className="w-full rounded-full bg-pink-600 text-white px-5 py-2 text-sm font-medium hover:bg-pink-700"
+                    >
+                        Entrar
+                    </button>
+                    {err ? (
+                        <div className="text-sm text-pink-600">{err}</div>
+                    ) : null}
+                </form>
+            </div>
+        );
+    }
+
+    /* ===== UI principal ===== */
     return (
         <div className="min-h-[100dvh] bg-white">
             {/* Header */}
             <header className="border-b">
-                <div className="mx-auto max-w-7xl px-4 py-5 flex items-center justify-between">
-                    <h1 className="text-xl font-semibold tracking-tight text-gray-900">
-                        Ítems de órdenes
-                    </h1>
-                    <div className="text-sm text-gray-500">Total: {items.length}</div>
+                <div className="mx-auto max-w-7xl px-4 py-5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-xl font-semibold tracking-tight text-gray-900">
+                            Ítems de órdenes
+                        </h1>
+                        <span className="text-xs text-gray-500">Total: {items.length}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => fetchItemsFromApi({ token: "", append: false })}
+                            disabled={loading}
+                            className="inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-gray-50 transition"
+                            title="Refrescar"
+                        >
+                            Refrescar
+                        </button>
+                        <button
+                            onClick={logout}
+                            className="inline-flex items-center justify-center rounded-full border px-3 py-1.5 text-xs font-semibold hover:bg-gray-50 transition"
+                            title="Cambiar clave / salir"
+                        >
+                            Cambiar clave
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -246,8 +339,8 @@ export default function AdminItemsPage() {
                                                 STATUS_BADGES[it.orderStatus].class
                                             )}
                                         >
-                        {STATUS_BADGES[it.orderStatus].label}
-                      </span>
+                                                {STATUS_BADGES[it.orderStatus].label}
+                                            </span>
                                     ) : (
                                         "—"
                                     )}
@@ -292,6 +385,13 @@ export default function AdminItemsPage() {
                         Refrescar
                     </button>
                 </div>
+
+                {/* Errores */}
+                {err ? (
+                    <div className="text-sm text-pink-600">
+                        {err}
+                    </div>
+                ) : null}
             </main>
         </div>
     );
