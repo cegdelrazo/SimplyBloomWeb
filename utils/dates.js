@@ -33,7 +33,7 @@ export const tomorrowStrLocal = () => {
     return `${y}-${m}-${day}`;
 };
 
-const cutoffHourForCity = (cityName) => (cityName === "CDMX" ? 13 : 13);
+const cutoffHourForCity = (cityName) => (cityName === "CDMX" ? 20 : 18);
 
 /**
  * Valida si ya es tarde para comprar para entrega mañana.
