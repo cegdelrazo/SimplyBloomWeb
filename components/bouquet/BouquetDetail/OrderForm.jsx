@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
  *  Constantes & helpers
  * ======================== */
 const MAX_IMAGES = 4;
-const MAX_SIZE_MB = 3;
+const MAX_SIZE_MB = 10;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
 function formatMB(bytes = 0) {

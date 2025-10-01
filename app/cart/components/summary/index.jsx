@@ -291,14 +291,28 @@ export default function CostSummary({
             });
             if (!res.ok) throw new Error(`Order API failed: ${res.status}`);
             const data = await res.json();
-
+// ID final (por si el server lo genera)
             const orderIdFromResp =
                 data?.orderId || data?.session?.metadata?.orderId || localOrderId;
 
+            // Callback externo (opcional)
             try {
                 onSubmit?.(payload, { orderId: orderIdFromResp, apiResponse: data });
             } catch {}
 
+            // Abrir Checkout de Stripe en la *misma pestaña*
+            const checkoutUrl =
+                data?.payment?.checkoutUrl ||
+                data?.session?.url ||
+                data?.checkoutUrl; // por si tu backend lo expone directo
+
+            if (checkoutUrl) {
+                setPhase("Abriendo pago…");
+                window.location.assign(checkoutUrl); // misma pestaña
+                return; // dejamos de ejecutar (la navegación toma control)
+            }
+
+            // Fallback: si por alguna razón no vino la URL, regresamos a success local
             setPhase("Redirigiendo…");
             router.push(`/success?orderId=${encodeURIComponent(orderIdFromResp)}`);
         } catch (err) {

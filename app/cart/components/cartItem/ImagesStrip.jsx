@@ -5,7 +5,7 @@ import { useGlobalContext } from "@/app/context/globalContext";
 import {safeUUID} from "@/utils/ids";
 
 const DEFAULT_MAX_IMAGES = 4;
-const DEFAULT_MAX_MB = 3;
+const DEFAULT_MAX_MB = 10;
 const BYTES_IN_MB = 1024 * 1024;
 
 function formatMB(bytes = 0) {
