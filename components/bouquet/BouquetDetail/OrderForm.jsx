@@ -382,34 +382,41 @@ export default function OrderForm({
                                         const picked = Array.from(e.target.files || []);
                                         const msgs = [];
 
-                                        if (picked.length > MAX_IMAGES) {
-                                            msgs.push(
-                                                `Máximo ${MAX_IMAGES} imágenes; se tomarán las primeras ${MAX_IMAGES}.`
-                                            );
-                                        }
+                                        if (picked.length === 0) return;
 
-                                        const sliced = picked.slice(0, MAX_IMAGES);
-
-                                        // Validar tamaño y construir modelos
+                                        // Validar tamaño y construir modelos NUEVOS
                                         const validFiles = [];
-                                        for (const f of sliced) {
+                                        for (const f of picked) {
                                             if (f.size > MAX_SIZE_BYTES) {
-                                                msgs.push(
-                                                    `${f.name} supera ${MAX_SIZE_MB} MB (${formatMB(f.size)}).`
-                                                );
+                                                msgs.push(`${f.name} supera ${MAX_SIZE_MB} MB (${formatMB(f.size)}).`);
                                             } else {
                                                 validFiles.push(f);
                                             }
                                         }
 
-                                        const models = buildImageModels(validFiles);
-                                        setFieldValue("images", models);
+                                        const newModels = buildImageModels(validFiles);
+
+                                        // Mezclar con las imágenes YA seleccionadas
+                                        const prev = Array.isArray(values.images) ? values.images : [];
+                                        const merged = [...prev, ...newModels];
+
+                                        // Respetar el tope de 4 y avisar si se recorta
+                                        let finalList = merged;
+                                        if (merged.length > MAX_IMAGES) {
+                                            msgs.push(`Máximo ${MAX_IMAGES} imágenes; se tomarán las primeras ${MAX_IMAGES}.`);
+                                            finalList = merged.slice(0, MAX_IMAGES);
+                                        }
+
+                                        setFieldValue("images", finalList);
 
                                         if (msgs.length) {
                                             setFieldError("images", msgs.join("\n"));
                                         } else {
                                             setFieldError("images", undefined);
                                         }
+
+                                        // Limpia el input para permitir volver a seleccionar el mismo archivo si se quiere
+                                        e.target.value = "";
                                     }}
                                 />
 
@@ -428,7 +435,7 @@ export default function OrderForm({
                                         </div>
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                             {values.images.map((m) => (
-                                                <div key={m.id} className="border rounded p-1">
+                                                <div key={m.id} className="border rounded p-1 relative">
                                                     <img
                                                         src={m.previewUrl}
                                                         alt={m.name}
@@ -437,6 +444,23 @@ export default function OrderForm({
                                                     <div className="mt-1 text-[11px] text-gray-600 break-words">
                                                         {m.name} — {formatMB(m.size)}
                                                     </div>
+
+                                                    {/* Botón eliminar */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            // Revocar URL y quitar del arreglo
+                                                            try { URL.revokeObjectURL(m.previewUrl); } catch {}
+                                                            const next = (values.images || []).filter((x) => x.id !== m.id);
+                                                            setFieldValue("images", next);
+                                                            // Limpia errores si ya no aplican
+                                                            if (next.length <= MAX_IMAGES) setFieldError("images", undefined);
+                                                        }}
+                                                        className="absolute top-1 right-1 rounded-full bg-white/90 border px-2 py-0.5 text-[11px] hover:bg-white"
+                                                        title="Quitar imagen"
+                                                    >
+                                                        ✕
+                                                    </button>
                                                 </div>
                                             ))}
                                         </div>
