@@ -71,7 +71,7 @@ export default function OrderForm({
 
     // Modal/consentimiento
     const [warnOpen, setWarnOpen] = useState(false);
-    const [warnAcknowledged, setWarnAcknowledged] = useState(false); // evita que reaparezca en el mismo flujo
+    const [warnAcknowledged, setWarnAcknowledged] = useState(false);
 
     const initialValues = {
         city: null,

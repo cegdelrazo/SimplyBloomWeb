@@ -15,6 +15,8 @@ export const HOLIDAYS = [
     "2025-01-01","2025-02-03","2025-03-17","2025-05-01","2025-09-16","2025-11-17","2025-12-25",
 ];
 
+const BLOCKED_DATES = ["2025-10-11", "2025-10-18", "2025-10-25"];
+
 // ⬇️ ahora el schema exige fecha > hoy (es decir, desde mañana)
 export const buildOrderSchema = (tomorrow, holidays = HOLIDAYS) =>
     Yup.object().shape({
@@ -33,7 +35,8 @@ export const buildOrderSchema = (tomorrow, holidays = HOLIDAYS) =>
                 if (!v) return false;
                 const d = new Date(v + "T00:00:00");
                 return d.getDay() !== 0;
-            }),
+            })
+            .test("not-blocked-dates", "No hay entregas ese día", (v) => !!v && !BLOCKED_DATES.includes(v)),
 
         title:   Yup.string().max(60, "Máximo 60 caracteres"),
         message: Yup.string().max(240, "Máximo 240 caracteres"),
