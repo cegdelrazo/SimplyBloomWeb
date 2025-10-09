@@ -1,28 +1,47 @@
+// constants.js (o el archivo donde definiste estos exports)
 import * as Yup from "yup";
 
 export const RAMOS = [
     { key: "rose", name: "RAMO ROSE", price: 800, img: "/media/bouquets/rose.webp" },
-    { key: "lino",  name: "RAMO LINO",  price: 900, img: "/media/bouquets/lino.webp" },
+    { key: "lino", name: "RAMO LINO", price: 900, img: "/media/bouquets/lino.webp" },
 ];
 
 export const cities = [
-    { city: "CDMX",        pickup: "Calle Sócrates en Polanco" },
-    { city: "Guadalajara", pickup: "Colonia Lomas del Valle" },
-    { city: "Monterrey",   pickup: "Dr. Roberto J. Cantú" },
+    {
+        city: "CDMX",
+        pickup: "Calle Sócrates en Polanco",
+        blockedDates: ["2025-10-11", "2025-10-18", "2025-10-25"], // 👈 solo CDMX
+    },
+    {
+        city: "Guadalajara",
+        pickup: "Colonia Lomas del Valle",
+        blockedDates: ["2025-10-12"], // 👈 ejemplo GDL (ajústalo o deja [])
+    },
+    {
+        city: "Monterrey",
+        pickup: "Dr. Roberto J. Cantú",
+        blockedDates: [], // 👈 sin bloqueos
+    },
 ];
 
 export const HOLIDAYS = [
     "2025-01-01","2025-02-03","2025-03-17","2025-05-01","2025-09-16","2025-11-17","2025-12-25",
 ];
 
-const BLOCKED_DATES = ["2025-10-11", "2025-10-18", "2025-10-25"];
+// Helper opcional (por si lo quieres usar en otros lados)
+export function isBlockedForCity(selectedCityObj, dateStr) {
+    if (!selectedCityObj || !dateStr) return false;
+    const arr = Array.isArray(selectedCityObj.blockedDates) ? selectedCityObj.blockedDates : [];
+    return arr.includes(dateStr);
+}
 
-// ⬇️ ahora el schema exige fecha > hoy (es decir, desde mañana)
+// ⬇️ Schema que valida por ciudad seleccionada
 export const buildOrderSchema = (tomorrow, holidays = HOLIDAYS) =>
     Yup.object().shape({
         city: Yup.object({
-            city:   Yup.string().required(),
+            city: Yup.string().required(),
             pickup: Yup.string().required(),
+            blockedDates: Yup.array().of(Yup.string()).optional(), // 👈 soporta bloqueos por ciudad
         })
             .required("Selecciona una ciudad")
             .typeError("Selecciona una ciudad"),
@@ -36,8 +55,13 @@ export const buildOrderSchema = (tomorrow, holidays = HOLIDAYS) =>
                 const d = new Date(v + "T00:00:00");
                 return d.getDay() !== 0;
             })
-            .test("not-blocked-dates", "No hay entregas ese día", (v) => !!v && !BLOCKED_DATES.includes(v)),
+            .test("not-blocked-by-city", "No hay entregas ese día en la ciudad seleccionada", function (v) {
+                if (!v) return false;
+                const selectedCityObj = this?.parent?.city || null;
+                const blocked = Array.isArray(selectedCityObj?.blockedDates) ? selectedCityObj.blockedDates : [];
+                return !blocked.includes(v);
+            }),
 
-        title:   Yup.string().max(60, "Máximo 60 caracteres"),
+        title: Yup.string().max(60, "Máximo 60 caracteres"),
         message: Yup.string().max(240, "Máximo 240 caracteres"),
     });
