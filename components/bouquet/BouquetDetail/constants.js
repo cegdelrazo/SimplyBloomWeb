@@ -11,17 +11,7 @@ export const cities = [
         city: "CDMX",
         pickup: "Calle Sócrates en Polanco",
         blockedDates: ["2025-10-11", "2025-10-18", "2025-10-25"], // 👈 solo CDMX
-    },
-    {
-        city: "Guadalajara",
-        pickup: "Colonia Lomas del Valle",
-        blockedDates: ["2025-10-12"], // 👈 ejemplo GDL (ajústalo o deja [])
-    },
-    {
-        city: "Monterrey",
-        pickup: "Dr. Roberto J. Cantú",
-        blockedDates: [], // 👈 sin bloqueos
-    },
+    }
 ];
 
 export const HOLIDAYS = [
