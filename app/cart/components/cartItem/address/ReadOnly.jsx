@@ -1,5 +1,19 @@
 "use client";
 
+const INT_TOKEN = " Int ";
+
+function parseExtNumber(stored = "") {
+    const s = String(stored || "").trim();
+    if (!s) return { exterior: "", interior: "" };
+
+    const idx = s.indexOf(INT_TOKEN);
+    if (idx === -1) return { exterior: s, interior: "" };
+
+    const exterior = s.slice(0, idx).trim();
+    const interior = s.slice(idx + INT_TOKEN.length).trim();
+    return { exterior, interior };
+}
+
 function Info({ label, value }) {
     return (
         <div>
@@ -11,6 +25,7 @@ function Info({ label, value }) {
 
 export default function ReadOnly({ values, onEdit, shipping }) {
     const { cp, street, extNumber, neighborhood, fullName, phone } = values || {};
+    const { exterior, interior } = parseExtNumber(extNumber);
 
     return (
         <div className="space-y-3 text-sm text-gray-800">
@@ -46,7 +61,8 @@ export default function ReadOnly({ values, onEdit, shipping }) {
                 <p className="text-xs font-semibold text-gray-900 mb-1">Dirección</p>
                 <div className="flex flex-wrap gap-x-6 gap-y-1">
                     <Info label="Calle" value={street} />
-                    <Info label="No. Ext." value={extNumber || "—"} />
+                    <Info label="No. Ext." value={exterior || "—"} />
+                    <Info label="No. Int." value={interior || "—"} />
                     <Info label="Colonia" value={neighborhood} />
                 </div>
             </div>

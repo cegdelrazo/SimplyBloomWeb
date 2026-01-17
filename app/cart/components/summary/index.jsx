@@ -48,8 +48,7 @@ function checkAddressComplete(addrRaw) {
         addr.exterior ??
         addr.numExt ??
         addr.outsideNumber;
-    const neigh =
-        addr.neighborhood ?? addr.colonia ?? addr.barrio ?? addr.col ?? addr.settlement;
+    const neigh = addr.neighborhood ?? addr.colonia ?? addr.barrio ?? addr.col ?? addr.settlement;
     const fields = { street, ext, neigh };
     const missing = Object.entries(fields)
         .filter(([, v]) => !hasAnyValue(v))
@@ -101,8 +100,7 @@ function mapDelivery(it) {
         addr.numExt ??
         addr.outsideNumber ??
         "";
-    const town =
-        addr.neighborhood ?? addr.colonia ?? addr.barrio ?? addr.col ?? addr.settlement ?? "";
+    const town = addr.neighborhood ?? addr.colonia ?? addr.barrio ?? addr.col ?? addr.settlement ?? "";
     const cp = it?.shipping?.cp || addr.cp || addr.postalCode || addr.zip || "";
     return {
         deliveryMode: "delivery",
@@ -156,6 +154,25 @@ function buildOrderPayload(cart, orderId) {
         },
         city: getRootCityLower(items),
     };
+}
+
+/* ======================== NUEVO: Validación phone ======================== */
+const digitsOnly = (s = "") => String(s).replace(/\D/g, "");
+
+function isValidStoredPhone(phone) {
+    const d = digitsOnly(phone);
+
+    // MX: 52 + 10 dígitos
+    if (d.startsWith("52")) return d.length === 12;
+
+    // US/CA: 1 + 10 dígitos
+    if (d.startsWith("1")) return d.length === 11;
+
+    // legacy (si aún tienes guardados 10 dígitos sin código país)
+    if (d.length === 10) return true;
+
+    // fallback
+    return d.length >= 8 && d.length <= 15;
 }
 
 /* ======================== UI Component ======================== */
@@ -235,7 +252,7 @@ export default function CostSummary({
 
     const buyer = cart?.buyer || {};
     const fullNameOk = Boolean((buyer.firstName || "").trim());
-    const phoneOk = !!buyer.phone && buyer.phone.replace(/\D/g, "").length === 10;
+    const phoneOk = !!buyer.phone && isValidStoredPhone(buyer.phone); // <- FIX
     const emailOk = !!buyer.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyer.email.trim());
 
     const hasPendingShipping = pendingShippingLineIds.length > 0;
@@ -244,7 +261,7 @@ export default function CostSummary({
     const blockingIssues = [];
     if (isCartEmpty) blockingIssues.push("Tu carrito está vacío.");
     if (!fullNameOk) blockingIssues.push("Falta el nombre del comprador.");
-    if (!phoneOk) blockingIssues.push("El teléfono debe tener 10 dígitos (MX).");
+    if (!phoneOk) blockingIssues.push("Ingresa un teléfono válido.");
     if (!emailOk) blockingIssues.push("Ingresa un correo válido.");
     if (hasMissingAddress) blockingIssues.push("Falta dirección completa en artículos con envío a domicilio.");
     if (hasPendingShipping) blockingIssues.push("Hay artículos con envío pendiente por C.P.");
@@ -291,9 +308,9 @@ export default function CostSummary({
             });
             if (!res.ok) throw new Error(`Order API failed: ${res.status}`);
             const data = await res.json();
-// ID final (por si el server lo genera)
-            const orderIdFromResp =
-                data?.orderId || data?.session?.metadata?.orderId || localOrderId;
+
+            // ID final (por si el server lo genera)
+            const orderIdFromResp = data?.orderId || data?.session?.metadata?.orderId || localOrderId;
 
             // Callback externo (opcional)
             try {
@@ -301,18 +318,15 @@ export default function CostSummary({
             } catch {}
 
             // Abrir Checkout de Stripe en la *misma pestaña*
-            const checkoutUrl =
-                data?.payment?.checkoutUrl ||
-                data?.session?.url ||
-                data?.checkoutUrl; // por si tu backend lo expone directo
+            const checkoutUrl = data?.payment?.checkoutUrl || data?.session?.url || data?.checkoutUrl;
 
             if (checkoutUrl) {
                 setPhase("Abriendo pago…");
-                window.location.assign(checkoutUrl); // misma pestaña
-                return; // dejamos de ejecutar (la navegación toma control)
+                window.location.assign(checkoutUrl);
+                return;
             }
 
-            // Fallback: si por alguna razón no vino la URL, regresamos a success local
+            // Fallback
             setPhase("Redirigiendo…");
             router.push(`/success?orderId=${encodeURIComponent(orderIdFromResp)}`);
         } catch (err) {
@@ -351,9 +365,7 @@ export default function CostSummary({
                                         ln.shipping?.valid ? (
                                             <p className="text-xs text-emerald-700">Envío: {money(ln.lineShipping)}</p>
                                         ) : (
-                                            <p className="text-xs text-amber-700">
-                                                Envío pendiente: agrega C.P. válido en la dirección.
-                                            </p>
+                                            <p className="text-xs text-amber-700">Envío pendiente: agrega C.P. válido en la dirección.</p>
                                         )
                                     ) : (
                                         <p className="text-xs text-gray-500">Pickup (sin costo de envío)</p>
@@ -382,9 +394,7 @@ export default function CostSummary({
 
                     <div className="flex items-center justify-between pt-2 border-t">
                         <span className="text-base font-semibold text-gray-900">Total</span>
-                        <span className="text-base font-semibold text-gray-900 tabular-nums">
-              {money(total)}
-            </span>
+                        <span className="text-base font-semibold text-gray-900 tabular-nums">{money(total)}</span>
                     </div>
                 </div>
 
