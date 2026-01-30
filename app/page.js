@@ -4,6 +4,8 @@ import ProductsCarousel from "@/components/products/ProductsCarousel";
 import PhotoStrip from "@/components/gallery/PhotoStrip";
 import IntroHero from "@/components/hero/IntroHero";
 import Script from "next/script";
+import { PRODUCTS, PRODUCTS_VALENTIN } from "@/lib/products";
+import ValentinesSpotlight from "@/components/hero/ValentinesSpotlight";
 
 export default function Home() {
     const heroImgs = ["/media/sb-02.webp", "/media/sb-03.webp"];
@@ -25,8 +27,9 @@ export default function Home() {
         `}
             </Script>
 
-            <HeroCarousel images={heroImgs} step={5000} fade={1600} random navbarHeight={64} />
-            <ProductsCarousel viewAllHref="/productos" />
+            {/*<HeroCarousel images={heroImgs} step={5000} fade={1600} random navbarHeight={64} />*/}
+            <ValentinesSpotlight />
+            <ProductsCarousel viewAllHref="/productos" products={PRODUCTS} />
             <PhotoStrip speed={28} height={240} gap={0} />
             <IntroHero />
         </main>
