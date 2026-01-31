@@ -7,7 +7,7 @@ export default function ValentinesSpotlight({
                                                 href = "/valentines",
                                             }) {
     return (
-        <section className="container">
+        <section className="container py-7">
             {/* Header */}
             <div className="flex items-center justify-between mb-10">
                 {/* Titles */}
