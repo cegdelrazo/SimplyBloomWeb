@@ -41,7 +41,7 @@ function normalizeMxPhoneToWa(phoneRaw) {
 function buildWaUrl(phone, orderId, buyerName) {
     const base = normalizeMxPhoneToWa(phone);
     if (!base) return "";
-    const text = `Hola ${buyerName || ""}. Te contacto sobre tu pedido ${orderId ? "#" + orderId : ""}.`.trim();
+    const text = `Hola ${buyerName || ""}. Te contacto confirmando tu pedido ${orderId ? "#" + orderId : ""}.`.trim();
     return `${base}?text=${encodeURIComponent(text)}`;
 }
 
