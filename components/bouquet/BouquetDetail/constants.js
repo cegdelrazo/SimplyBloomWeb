@@ -2,6 +2,7 @@
 import * as Yup from "yup";
 
 export const RAMOS = [
+    { key: "chetos", name: "RAMO DE PAPAS", price: 800, img: "/media/bouquets/papas.webp" },
     { key: "rose", name: "RAMO ROSE", price: 800, img: "/media/bouquets/rose.webp" },
     { key: "lino", name: "RAMO LINO", price: 800, img: "/media/bouquets/lino.webp" },
 ];
