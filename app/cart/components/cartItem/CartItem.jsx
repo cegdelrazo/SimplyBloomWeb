@@ -18,6 +18,15 @@ export default function CartItem({ item }) {
     const { dispatch } = useGlobalContext();
     const { product, price, options } = item || {};
 
+    // ========================= AGREGADO =========================
+    const isChetos = useMemo(
+        () => item?.id === "chetos" || product?.id === "chetos",
+        [item?.id, product?.id]
+    );
+
+    const chetosPapas = item?.deliveryAddress?.chetos_papas || "";
+    // ============================================================
+
     const initialMode =
         item?.deliveryAddress?.mode === "delivery" ? "delivery" : "pickup";
     const [deliveryMode, setDeliveryMode] = useState(initialMode);
@@ -39,6 +48,12 @@ export default function CartItem({ item }) {
         setDeliveryMode(mode);
         syncAddress({ mode });
     };
+
+    // ========================= AGREGADO =========================
+    const handleChetosPapasChange = (e) => {
+        syncAddress({ chetos_papas: e.target.value });
+    };
+    // ============================================================
 
     // Simulación de envío por CP
     const handleCpChange = (cp) => {
@@ -155,6 +170,24 @@ export default function CartItem({ item }) {
             {/* Nota/mensaje y galería */}
             <MessageNote title={options?.title} message={options?.message} />
             <ImagesStrip lineId={item.lineId} images={item.images} />
+
+            {/* ========================= AGREGADO ========================= */}
+            {isChetos ? (
+                <div className="rounded-xl border border-gray-200 p-3 md:p-4 space-y-2">
+                    <div className="text-sm font-semibold text-gray-900">
+                        ¿Qué papas quieres mandar con tus chetos?
+                    </div>
+
+                    <textarea
+                        rows={3}
+                        value={chetosPapas}
+                        onChange={handleChetosPapasChange}
+                        placeholder="Ej: Doritos Nacho, Cheetos Flamin Hot, Takis morados, Sabritas adobadas..."
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/10"
+                    />
+                </div>
+            ) : null}
+            {/* ============================================================ */}
 
             {/* Controles de entrega / dirección */}
             <div className="space-y-3">
