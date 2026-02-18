@@ -27,8 +27,7 @@ export default function Home() {
         `}
             </Script>
 
-            {/*<HeroCarousel images={heroImgs} step={5000} fade={1600} random navbarHeight={64} />*/}
-            <ValentinesSpotlight />
+            <HeroCarousel images={heroImgs} step={5000} fade={1600} random navbarHeight={64} />
             <ProductsCarousel viewAllHref="/productos" products={PRODUCTS} />
             <PhotoStrip speed={28} height={240} gap={0} />
             <IntroHero />
