@@ -16,7 +16,7 @@ export const cities = [
 ];
 
 export const HOLIDAYS = [
-    "2026-03-16"
+    "2026-03-16", "2026-03-26"
 ];
 
 // Helper opcional (por si lo quieres usar en otros lados)
