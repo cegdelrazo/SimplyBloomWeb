@@ -11,7 +11,7 @@ export const cities = [
     {
         city: "CDMX",
         pickup: "Calle Sócrates en Polanco",
-        blockedDates: ["2026-01-31", "2026-02-07", "2026-02-16", "2026-03-07", "2026-03-14", "2026-03-17"],
+        blockedDates: ["2026-04-02", "2026-04-03", "2026-04-04"],
     }
 ];
 
