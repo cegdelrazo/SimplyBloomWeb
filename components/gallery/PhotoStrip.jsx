@@ -3,22 +3,21 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const DEFAULT_PHOTOS = [
-    "/media/gallery/photo-01.webp",
-    "/media/gallery/photo-02.webp",
-    "/media/gallery/photo-03.webp",
-    "/media/gallery/photo-04.webp",
-    "/media/gallery/photo-05.webp",
-    "/media/gallery/photo-06.webp",
-    "/media/gallery/photo-07.webp",
-    "/media/gallery/photo-08.webp",
-    "/media/gallery/photo-09.webp",
+    "/media/gallery/madres1.webp",
+    "/media/gallery/madres2.webp",
+    "/media/gallery/madres3.webp",
+    "/media/gallery/madres4.webp",
+    "/media/gallery/madres5.webp",
+    "/media/gallery/madres6.webp",
+    "/media/gallery/madres7.webp",
+    "/media/gallery/madres8.webp",
 ];
 
 export default function PhotoStrip({
                                        images = DEFAULT_PHOTOS,
                                        height = 200,
-                                       speed = 28,             // px/s para el marquee automático
-                                       buttonSpeed = 600,      // px/s cuando mantienes presionado un botón en desktop
+                                       speed = 28,
+                                       buttonSpeed = 600,
                                    }) {
     const list = useMemo(() => images.filter(Boolean), [images]);
 

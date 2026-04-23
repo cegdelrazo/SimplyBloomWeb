@@ -10,6 +10,13 @@ import BottomBarMobile from "./BottomBarMobile";
 import Toast from "./Toast";
 import { RAMOS } from "./constants";
 
+const SPECIAL_PRODUCTS = [
+    "product-thank-you",
+    "product-happy-day",
+    "product-my-mother",
+    "product-the-best",
+];
+
 export default function BouquetDetailClient({ product }) {
     if (!product) {
         return <main className="pt-24 container">No se encontró el producto.</main>;
@@ -33,6 +40,10 @@ export default function BouquetDetailClient({ product }) {
     // 🔹 Nuevo: estado reportado por OrderForm para saber si el submit debe estar deshabilitado
     const [mobileDisabled, setMobileDisabled] = useState(true);
 
+    const filteredRamos = SPECIAL_PRODUCTS.includes(product.id)
+        ? RAMOS.filter(r => r.key === "mother")
+        : RAMOS.filter(r => r.key !== "mother");
+
     return (
         <main>
             <Hero src={heroSrc} title={product.name} subtitle={product.subtitle} />
@@ -43,6 +54,8 @@ export default function BouquetDetailClient({ product }) {
             </div>
 
             <section className="container grid gap-6 md:gap-10 md:grid-cols-2">
+
+
                 <RamoPicker ramos={RAMOS} choice={choice} onChange={setChoice} />
 
                 <aside className="md:sticky md:top-24 self-start rounded-2xl border bg-white p-4 sm:p-6">

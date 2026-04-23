@@ -2,10 +2,13 @@
 import * as Yup from "yup";
 
 export const RAMOS = [
-    { key: "chetos", name: "RAMO DE PAPAS", price: 800, img: "/media/bouquets/papas.webp" },
-    { key: "rose", name: "RAMO ROSE", price: 800, img: "/media/bouquets/rose.webp" },
-    { key: "lino", name: "RAMO LINO", price: 800, img: "/media/bouquets/lino.webp" },
+    //{ key: "chetos", name: "RAMO DE PAPAS", price: 800, img: "/media/bouquets/papas.webp" },
+    { key: "mother", name: "MOTHER’S SPECIAL", price: 2000, img: "/media/madres.png" },
+    { key: "rose", name: "RAMO ROSE", price: 900, img: "/media/bouquets/rose.webp" },
+    { key: "lino", name: "RAMO LINO", price: 900, img: "/media/bouquets/lino.webp" },
 ];
+
+const SPECIAL_ALLOWED_DATES = ["2026-05-10"];
 
 export const cities = [
     {
@@ -43,6 +46,7 @@ export const buildOrderSchema = (tomorrow, holidays = HOLIDAYS) =>
             .test("not-holiday", "No hay entregas en días festivos", (v) => !!v && !holidays.includes(v))
             .test("not-sunday", "No hay entregas los domingos", (v) => {
                 if (!v) return false;
+                if (SPECIAL_ALLOWED_DATES.includes(v)) return true;
                 const d = new Date(v + "T00:00:00");
                 return d.getDay() !== 0;
             })

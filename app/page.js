@@ -10,7 +10,6 @@ import ValentinesSpotlight from "@/components/hero/ValentinesSpotlight";
 export default function Home() {
     const heroImgs = ["/media/sb-02.webp", "/media/sb-03.webp"];
 
-    // (Opcional) log en consola del servidor:
     console.log("[SERVER] ISO (UTC):", new Date().toISOString());
 
     return (
@@ -27,9 +26,14 @@ export default function Home() {
         `}
             </Script>
 
-            <HeroCarousel images={heroImgs} step={5000} fade={1600} random navbarHeight={64} />
-            <ProductsCarousel viewAllHref="/productos" products={PRODUCTS} />
+            {/*<HeroCarousel images={heroImgs} step={5000} fade={1600} random navbarHeight={64} />*/}
             <PhotoStrip speed={28} height={240} gap={0} />
+            <ValentinesSpotlight
+                title="EDICIÓN DÍA DE LAS MADRES"
+                image="/media/madres.png"
+                href="/motherday"
+            />
+            <ProductsCarousel viewAllHref="/productos" products={PRODUCTS} />
             <IntroHero />
         </main>
     );
