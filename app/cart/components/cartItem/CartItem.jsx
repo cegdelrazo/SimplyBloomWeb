@@ -27,7 +27,8 @@ export default function CartItem({ item }) {
     const chetosPapas = item?.deliveryAddress?.chetos_papas || "";
     // ============================================================
 
-    const initialMode = "delivery";
+    const initialMode =
+        item?.deliveryAddress?.mode === "delivery" ? "delivery" : "pickup";
     const [deliveryMode, setDeliveryMode] = useState(initialMode);
 
     const pickupAddress = useMemo(
