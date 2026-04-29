@@ -7,29 +7,36 @@ import DeliveryModeSelector from "./DeliveryModeSelector";
 import AddressForm from "@/app/cart/components/cartItem/address";
 import { simulateShippingByCP } from "@/utils/shipping";
 import ImagesStrip from "@/app/cart/components/cartItem/ImagesStrip";
+import PickupModal from "@/components/bouquet/BouquetDetail/PickupModal";
 
-// Helper moneda
 const mxn = (n) =>
     Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(
         Number(n || 0)
     );
 
+function isPickupWarningDate(date) {
+    if (!date) return false;
+    return date.endsWith("-05-09") || date.endsWith("-05-10");
+}
+
 export default function CartItem({ item }) {
     const { dispatch } = useGlobalContext();
     const { product, price, options } = item || {};
 
-    // ========================= AGREGADO =========================
     const isChetos = useMemo(
         () => item?.id === "chetos" || product?.id === "chetos",
         [item?.id, product?.id]
     );
 
     const chetosPapas = item?.deliveryAddress?.chetos_papas || "";
-    // ============================================================
 
     const initialMode =
         item?.deliveryAddress?.mode === "delivery" ? "delivery" : "pickup";
+
     const [deliveryMode, setDeliveryMode] = useState(initialMode);
+    const [pickupModalOpen, setPickupModalOpen] = useState(false);
+    const [pickupWarningAcknowledged, setPickupWarningAcknowledged] =
+        useState(false);
 
     const pickupAddress = useMemo(
         () => options?.city?.pickup || "Punto de recolección por confirmar",
@@ -47,15 +54,20 @@ export default function CartItem({ item }) {
     const handleModeChange = (mode) => {
         setDeliveryMode(mode);
         syncAddress({ mode });
+
+        if (
+            mode === "delivery" &&
+            isPickupWarningDate(options?.date) &&
+            !pickupWarningAcknowledged
+        ) {
+            setPickupModalOpen(true);
+        }
     };
 
-    // ========================= AGREGADO =========================
     const handleChetosPapasChange = (e) => {
         syncAddress({ chetos_papas: e.target.value });
     };
-    // ============================================================
 
-    // Simulación de envío por CP
     const handleCpChange = (cp) => {
         const sim = simulateShippingByCP(cp);
         dispatch({
@@ -68,13 +80,14 @@ export default function CartItem({ item }) {
                     zone: sim.zone ?? null,
                     cost: sim.valid ? sim.cost : 0,
                     etaDays: sim.etaDays ?? null,
-                    note: sim.valid ? sim.note ?? "" : sim.message ?? "Ingresa un CP válido de 5 dígitos.",
+                    note: sim.valid
+                        ? sim.note ?? ""
+                        : sim.message ?? "Ingresa un CP válido de 5 dígitos.",
                 },
             },
         });
     };
 
-    // Eliminar ítem
     const removeItem = useCallback(() => {
         dispatch({ type: "REMOVE_ITEM_CART", payload: item.lineId });
     }, [dispatch, item.lineId]);
@@ -83,25 +96,27 @@ export default function CartItem({ item }) {
         if (window.confirm("¿Eliminar este artículo del carrito?")) removeItem();
     }, [removeItem]);
 
+    const changeToPickup = () => {
+        setDeliveryMode("pickup");
+        syncAddress({ mode: "pickup" });
+    };
+
     return (
         <article className="border-b border-gray-100 py-6 space-y-4">
-            {/* ======== Header responsive (sin posicionamiento absoluto) ======== */}
             <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                    {/* Grid del encabezado: img | textos | precio (en md+) */}
                     <div className="grid grid-cols-[56px,1fr] md:grid-cols-[72px,1fr,auto] gap-3 md:gap-4 items-start">
-                        {/* Imagen */}
                         <img
                             src={item?.image}
                             alt={product?.name || "Producto"}
                             className="h-14 w-14 md:h-18 md:w-18 rounded-lg object-cover"
                         />
 
-                        {/* Título y subtítulo */}
                         <div className="min-w-0">
                             <h3 className="text-base font-semibold text-gray-900 truncate">
                                 {product?.name}
                             </h3>
+
                             {product?.subtitle && (
                                 <p className="text-sm text-gray-500 truncate">
                                     {product?.subtitle}
@@ -109,7 +124,6 @@ export default function CartItem({ item }) {
                             )}
                         </div>
 
-                        {/* Precio en desktop/tablet */}
                         <div className="hidden md:flex items-start justify-end">
               <span className="inline-flex rounded-full bg-black/90 text-white px-3 py-1 text-sm font-semibold">
                 {mxn(price)}
@@ -117,13 +131,13 @@ export default function CartItem({ item }) {
                         </div>
                     </div>
 
-                    {/* Chips/etiquetas debajo del header */}
                     <div className="mt-2 flex flex-wrap gap-2">
                         {options?.city?.city && (
                             <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
                 {options.city.city}
               </span>
                         )}
+
                         {options?.date && (
                             <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-700">
                 {options.date}
@@ -131,7 +145,6 @@ export default function CartItem({ item }) {
                         )}
                     </div>
 
-                    {/* Precio en mobile (propio renglón a la derecha) */}
                     <div className="mt-2 flex md:hidden justify-end">
             <span className="inline-flex rounded-full bg-black/90 text-white px-3 py-1 text-sm font-semibold">
               {mxn(price)}
@@ -139,7 +152,6 @@ export default function CartItem({ item }) {
                     </div>
                 </div>
 
-                {/* Botón eliminar: sólo md+ en el header (no choca con precio) */}
                 <div className="hidden md:block shrink-0">
                     <button
                         type="button"
@@ -154,7 +166,6 @@ export default function CartItem({ item }) {
                 </div>
             </div>
 
-            {/* Botón eliminar en mobile: su propio bloque y ancho completo */}
             <div className="md:hidden">
                 <button
                     type="button"
@@ -167,11 +178,9 @@ export default function CartItem({ item }) {
                 </button>
             </div>
 
-            {/* Nota/mensaje y galería */}
             <MessageNote title={options?.title} message={options?.message} />
             <ImagesStrip lineId={item.lineId} images={item.images} />
 
-            {/* ========================= AGREGADO ========================= */}
             {isChetos ? (
                 <div className="rounded-xl border border-gray-200 p-3 md:p-4 space-y-2">
                     <div className="text-sm font-semibold text-gray-900">
@@ -187,9 +196,7 @@ export default function CartItem({ item }) {
                     />
                 </div>
             ) : null}
-            {/* ============================================================ */}
 
-            {/* Controles de entrega / dirección */}
             <div className="space-y-3">
                 <DeliveryModeSelector
                     value={deliveryMode}
@@ -206,6 +213,19 @@ export default function CartItem({ item }) {
                     />
                 )}
             </div>
+
+            <PickupModal
+                open={pickupModalOpen}
+                onClose={() => {
+                    setPickupWarningAcknowledged(true);
+                    setPickupModalOpen(false);
+                }}
+                onAccept={() => {
+                    setPickupWarningAcknowledged(true);
+                    setPickupModalOpen(false);
+                    changeToPickup();
+                }}
+            />
         </article>
     );
 }
