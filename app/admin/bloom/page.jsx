@@ -82,7 +82,7 @@ export default function AdminItemsPage() {
         setLoading(true);
         setErr("");
         try {
-            const qs = new URLSearchParams({ limit: "100" });
+            const qs = new URLSearchParams({ limit: "1000" });
             if (token) qs.set("nextToken", token);
 
             const res = await fetch(`${API_BASE}/orders/list?${qs.toString()}`, {
