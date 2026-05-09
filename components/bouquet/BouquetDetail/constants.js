@@ -5,7 +5,6 @@ export const RAMOS = [
     //{ key: "chetos", name: "RAMO DE PAPAS", price: 800, img: "/media/bouquets/papas.webp" },
     { key: "mother", name: "MOTHER’S SPECIAL", price: 2000, img: "/media/madres.png" },
     { key: "rose", name: "RAMO ROSE", price: 900, img: "/media/bouquets/rose.webp" },
-    { key: "lino", name: "RAMO LINO", price: 900, img: "/media/bouquets/lino.webp" },
 ];
 
 const SPECIAL_ALLOWED_DATES = ["2026-05-10"];
