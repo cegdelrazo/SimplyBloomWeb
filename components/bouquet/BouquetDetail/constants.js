@@ -2,9 +2,10 @@
 import * as Yup from "yup";
 
 export const RAMOS = [
-    //{ key: "chetos", name: "RAMO DE PAPAS", price: 800, img: "/media/bouquets/papas.webp" },
-    { key: "mother", name: "MOTHER’S SPECIAL", price: 2000, img: "/media/madres.png" },
-    { key: "rose", name: "RAMO ROSE", price: 900, img: "/media/bouquets/rose.webp" },
+    { key: "mother", name: "MOTHER’S SPECIAL", price: 1800, img: "/media/madres.png" },
+    { key: "rose", name: "RAMO ROSE", price: 800, img: "/media/bouquets/rose.webp" },
+    { key: "lino", name: "RAMO LINO", price: 800, img: "/media/bouquets/lino.webp" },
+    { key: "chetos", name: "RAMO DE PAPAS", price: 800, img: "/media/bouquets/papas.webp" },
 ];
 
 const SPECIAL_ALLOWED_DATES = ["2026-05-10"];
@@ -13,7 +14,7 @@ export const cities = [
     {
         city: "CDMX",
         pickup: "Calle Sócrates en Polanco",
-        blockedDates: ["2026-04-02", "2026-04-03", "2026-04-04", "2026-04-09", "2026-04-10", "2026-05-11", "2026-05-12", "2026-05-13"],
+        blockedDates: ["2026-04-02", "2026-04-03", "2026-04-04", "2026-04-09", "2026-04-10", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14"],
     }
 ];
 

@@ -3,21 +3,22 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const DEFAULT_PHOTOS = [
-    "/media/gallery/madres1.webp",
-    "/media/gallery/madres2.webp",
-    "/media/gallery/madres3.webp",
-    "/media/gallery/madres4.webp",
-    "/media/gallery/madres5.webp",
-    "/media/gallery/madres6.webp",
-    "/media/gallery/madres7.webp",
-    "/media/gallery/madres8.webp",
+    "/media/gallery/photo-01.webp",
+    "/media/gallery/photo-02.webp",
+    "/media/gallery/photo-03.webp",
+    "/media/gallery/photo-04.webp",
+    "/media/gallery/photo-05.webp",
+    "/media/gallery/photo-06.webp",
+    "/media/gallery/photo-07.webp",
+    "/media/gallery/photo-08.webp",
+    "/media/gallery/photo-09.webp",
 ];
 
 export default function PhotoStrip({
                                        images = DEFAULT_PHOTOS,
                                        height = 200,
-                                       speed = 28,
-                                       buttonSpeed = 600,
+                                       speed = 28,             // px/s para el marquee automático
+                                       buttonSpeed = 600,      // px/s cuando mantienes presionado un botón en desktop
                                    }) {
     const list = useMemo(() => images.filter(Boolean), [images]);
 
@@ -293,86 +294,86 @@ export default function PhotoStrip({
             />
 
             <style jsx>{`
-        /* Superficie: móvil permite scroll vertical; durante drag bloquea para fluidez */
-        :global(.drag-surface) {
-          touch-action: pan-y;
-          cursor: default;
-          overscroll-behavior: contain;
-        }
-        :global(.drag-surface.dragging) {
-          touch-action: none;
-          cursor: grabbing !important;
-        }
+                /* Superficie: móvil permite scroll vertical; durante drag bloquea para fluidez */
+                :global(.drag-surface) {
+                    touch-action: pan-y;
+                    cursor: default;
+                    overscroll-behavior: contain;
+                }
+                :global(.drag-surface.dragging) {
+                    touch-action: none;
+                    cursor: grabbing !important;
+                }
 
-        /* Wrapper con offset manual (modularizado en applyTransform) */
-        :global(.runway-wrap) {
-          height: 100%;
-          will-change: transform;
-          transform: translate3d(var(--offset, 0px), 0, 0);
-        }
+                /* Wrapper con offset manual (modularizado en applyTransform) */
+                :global(.runway-wrap) {
+                    height: 100%;
+                    will-change: transform;
+                    transform: translate3d(var(--offset, 0px), 0, 0);
+                }
 
-        /* Pista con marquee automático (pausado durante drag/botón) */
-        :global(.runway) {
-          display: flex;
-          align-items: center;
-          gap: 0;
-          line-height: 0;
-          will-change: transform;
-          width: calc(var(--seqw) * 2); /* dos secuencias pegadas */
-          transform: translate3d(0, 0, 0);
-        }
-        :global(.runway.run) {
-          animation: marquee var(--dur) linear infinite;
-          animation-play-state: running;
-        }
-        :global(.runway.paused) {
-          animation-play-state: paused !important;
-        }
-        @media (hover: hover) and (pointer: fine) {
-          /* opcional: pausar al hover en desktop (quítalo si no lo quieres) */
-          :global(.runway.run:hover) {
-            animation-play-state: paused;
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          :global(.runway.run) {
-            animation: none;
-          }
-        }
+                /* Pista con marquee automático (pausado durante drag/botón) */
+                :global(.runway) {
+                    display: flex;
+                    align-items: center;
+                    gap: 0;
+                    line-height: 0;
+                    will-change: transform;
+                    width: calc(var(--seqw) * 2); /* dos secuencias pegadas */
+                    transform: translate3d(0, 0, 0);
+                }
+                :global(.runway.run) {
+                    animation: marquee var(--dur) linear infinite;
+                    animation-play-state: running;
+                }
+                :global(.runway.paused) {
+                    animation-play-state: paused !important;
+                }
+                @media (hover: hover) and (pointer: fine) {
+                    /* opcional: pausar al hover en desktop (quítalo si no lo quieres) */
+                    :global(.runway.run:hover) {
+                        animation-play-state: paused;
+                    }
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    :global(.runway.run) {
+                        animation: none;
+                    }
+                }
 
-        /* Secuencia con anchos fijos */
-        :global(.strip-seq) {
-          display: flex;
-          height: 100%;
-          gap: 0;
-          flex: none;
-        }
-        :global(.strip-seq > figure) {
-          margin: 0;
-          padding: 0;
-          display: block;
-          height: 100%;
-          flex: none;
-        }
-        :global(.strip-seq img) {
-          display: block;
-          height: 100%;
-          width: 100%;
-          object-fit: contain;
-          object-position: center;
-          border: 0;
-        }
+                /* Secuencia con anchos fijos */
+                :global(.strip-seq) {
+                    display: flex;
+                    height: 100%;
+                    gap: 0;
+                    flex: none;
+                }
+                :global(.strip-seq > figure) {
+                    margin: 0;
+                    padding: 0;
+                    display: block;
+                    height: 100%;
+                    flex: none;
+                }
+                :global(.strip-seq img) {
+                    display: block;
+                    height: 100%;
+                    width: 100%;
+                    object-fit: contain;
+                    object-position: center;
+                    border: 0;
+                }
 
-        /* Marquee: recorre exactamente una secuencia */
-        @keyframes marquee {
-          from {
-            transform: translate3d(0, 0, 0);
-          }
-          to {
-            transform: translate3d(calc(var(--seqw) * -1), 0, 0);
-          }
-        }
-      `}</style>
+                /* Marquee: recorre exactamente una secuencia */
+                @keyframes marquee {
+                    from {
+                        transform: translate3d(0, 0, 0);
+                    }
+                    to {
+                        transform: translate3d(calc(var(--seqw) * -1), 0, 0);
+                    }
+                }
+            `}</style>
         </div>
     );
 }
